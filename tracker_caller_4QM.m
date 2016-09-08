@@ -1,85 +1,92 @@
-clear
+function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
+                                 nm_per_pixel,secs_per_frame,noise_sz, ...
+                                 feat_size,delta_fit,threshfact)
+
+% SEGMENTATION AND TRACKING OF PARTICLES VIA THE 4QM METHOD IN 2D.
+%
+% INPUTS
+%
+% filestub -- Path to the image_stack to be analyzed. 
+% nframes -- Number of frames in the image stack.
+% set_length -- Number of images in a set. 
+% nm_per_pixel -- [optional] Actual pixel width (nm).
+% secs_per_frame -- [optional] Time between frames (sec).
+% noise_sz -- [optional] (pixels).
+% feat_size -- [optional] Full optical radius of particle (pixels).
+% delta_fit -- [optional] Narrows analysis region around particle (pixels).
+% treshfact -- [optional] maximum intensity devided by the thresfact gives
+%              the threshold value
+
 tic
 
-% datasetnames = [0;0.1;2;10;25;50;100;200];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set up particle, intensity and duration parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% for dataset = 1:length(datasetnames)
+if nargin < 9, threshfact = 3.5; end
+if nargin < 8, delta_fit = 3; end
+if nargin < 7, feat_size = 15; end
+if nargin < 6, noise_sz = 1; end
+if nargin < 5, secs_per_frame = 0.011179722; end
+if nargin < 4, nm_per_pixel = 16.25; end  % zyla at 400x
 
-filestub = 'fake_jiggly_data_4';
-
-%%%%%%%%%%%%%%
-%set up particle and intensity parameters
-%%%%%%%%%%%%%%%
-nm_per_pixel = 16.25; % zyla at 400x
-secs_per_frame = 0.011179722;
-noise_sz = 1; %pixels
-feat_size = 15; %pixels (full optical radius of particle)
-delta_fit = 3; %pixels (narrows analysis region around particle)
-threshfact = 3.5;
-widthcut = (feat_size+1)/2; %pixels (get rid of edge particles; approx (feat_size+1)/2)
-
-%%%%%%%%%%%%%%
-%set up duration parameters
-%%%%%%%%%%%%%%%
-nframes = 3802;
-set_length = 200;
 nsets = floor(nframes/set_length);
 
-%%%%%%%%%%%%%%
-%step through sets
-%%%%%%%%%%%%%%%
-for set = 1:nsets
-    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Step through sets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for set = 1:nsets   
     frmstart = (set-1)*set_length + 1;
     frmend = frmstart + set_length - 1;
     
-    %%%%%%%%%%%
-    %set up arrays
-    %%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Set up arrays
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     temp = double(imread([filestub '.tif'],frmstart));
     data = zeros(size(temp,1),size(temp,2),frmend-frmstart+1);
     b = data;
     
-    a1 = [0 0 0 0 0 0 0 0 0];
-    pos = [0 0 0];
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Read in data + bandpasfilter
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    %%%%%%%%%%%
-    % read in data
-    %%%%%%%%%%%
     for frame = frmstart:frmend
-        frame
         data(:,:,frame-frmstart+1) = double(imread([filestub '.tif'],frame));
-        b(:,:,frame-frmstart+1) = bpass2D_TA(data(:,:,frame-frmstart+1),noise_sz,feat_size);
+        b(:,:,frame-frmstart+1) = bpass2D_TA(data(:,:,frame-frmstart+1) ...
+                                                  ,noise_sz,feat_size)
     end
     
-    %%%%
-    % do traditional tracking to determine averaged particle centers
-    %%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Do traditional tracking to determine averaged particle centers
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     thresh = max(b(:))/threshfact;
     cnt = zeros(1,5);
     
     for frame = 1:size(b,3)
-        pk = pkfnd(b(:,:,frame),thresh,feat_size);
-        temp = cntrd(b(:,:,frame),pk,feat_size,0);
+        pk = pkfnd(b(:,:,frame),thresh,2*feat_size);
+        size(pk)
+        temp = cntrd(b(:,:,frame),pk,2*feat_size,0);
+        size(temp)
         cnt = [cnt; [temp repmat(frame,[size(temp,1) 1])]];
     end
     
     cnt(1,:)=[];
     
-    param.mem=0; %number of steps disconnected tracks can be reconnected,in case a particle is lost
-    param.dim=2; %dimension of the system
-    param.good=size(data,3); %minimum length of track; throw away tracks shorter than this
-    param.quiet=0; %turns on or off printing progress to screen
-    maxdisp=feat_size/2; %maxdisp should be set to a value somewhat less than the mean spacing between the particles.
+    param.mem = 0; %number of steps disconnected tracks can be reconnected,in case a particle is lost
+    param.dim = 2; %dimension of the system
+    param.good = size(data,3); %minimum length of track; throw away tracks shorter than this
+    param.quiet = 0; %turns on or off printing progress to screen
+    maxdisp = feat_size/2; %maxdisp should be set to a value somewhat less than the mean spacing between the particles.
     
     tracks = trackin(cnt,maxdisp,param);
     clear cnt
     
-    %%%
-    %visually check tracks
-    %%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Visually check tracks
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
     
                 for frame = 1:size(data,3)
     
@@ -93,16 +100,17 @@ for set = 1:nsets
                     scatter(tempx,tempy,'r')
                     truesize
                     f = getframe;
-                    imwrite(frame2im(f),'tracking_movie.tif','tiff','compression','none','writemode','append');
+                    imwrite(frame2im(f),[filestub 'tracking_movie.tif'], ...
+                            'tiff','compression','none','writemode','append');
     
                 end
                 close
     
-    %%%%
-    %compute averaged centers to use a reference points for rest of
-    %analysis
-    %%%
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Compute averaged centers to use a reference points for rest of
+    % analysis
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     ptclecnt = 0;
     
     for ptcle = 1:max(tracks(:,6))
@@ -113,27 +121,24 @@ for set = 1:nsets
         end
     end
     
-    %%%%%%%%%%%%%%%%
-    %compute noise and estimate centroiding error
-    %%%%%%%%%%%%%%%%%
-    step_amplitude = 1;
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Compute noise and estimate centroiding error
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
     param.feat_size = feat_size;
     param.delta_fit = delta_fit;
-    param.step_amplitude = step_amplitude;
+    param.step_amplitude = 1;
     param.ntests = 100;
     param.threshfact = threshfact;
-    param.noise_sz = noise_sz;
-    param.widthcut = widthcut;
     param.ref_cnts = ref_cnts;
     
-    calibration_params = mserror_calculator_4QM_0(b,tracks,param);
+    calibration_params = mserror_calculator_4QM(b,tracks,param);
     rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
     mean(rmserror);
     
-    %%%%
-    %now use single particle calibrations with 4QM to process real data
-    %%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Now use single particle calibrations with 4QM to process real data
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     tracks_4QM = zeros(1,4);
     
