@@ -55,7 +55,7 @@ for set = 1:nsets
     for frame = frmstart:frmend
         data(:,:,frame-frmstart+1) = double(imread([filestub '.tif'],frame));
         b(:,:,frame-frmstart+1) = bpass2D_TA(data(:,:,frame-frmstart+1) ...
-                                                  ,noise_sz,feat_size)
+                                                  ,noise_sz,feat_size);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,17 +63,13 @@ for set = 1:nsets
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     thresh = max(b(:))/threshfact;
-    cnt = zeros(1,5);
+    cnt = zeros(0,5);
     
     for frame = 1:size(b,3)
-        pk = pkfnd(b(:,:,frame),thresh,2*feat_size);
-        size(pk)
-        temp = cntrd(b(:,:,frame),pk,2*feat_size,0);
-        size(temp)
+        pk = pkfnd(b(:,:,frame),thresh,feat_size);  
+        temp = cntrd(b(:,:,frame),pk,feat_size,0);
         cnt = [cnt; [temp repmat(frame,[size(temp,1) 1])]];
     end
-    
-    cnt(1,:)=[];
     
     param.mem = 0; %number of steps disconnected tracks can be reconnected,in case a particle is lost
     param.dim = 2; %dimension of the system
