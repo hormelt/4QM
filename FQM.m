@@ -56,7 +56,7 @@ if calibrate
             scatter(p1(1)*(cnt(:,1)+p1(2)),refShift(:,1),'b')
             hold on
             scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
-            getframe
+            getframe;
             
         end
         
