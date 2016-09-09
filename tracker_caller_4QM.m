@@ -64,12 +64,6 @@ nsets = floor(nframes/set_length);
 
 % Set up parameters for pre-tracking.
 
-TrackMem = 0; %number of steps disconnected tracks can be reconnected,in case a particle is lost
-Dim = 2; %dimension of the system
-MinTrackLength = set_length; %minimum length of track; throw away tracks shorter than this
-PrintTrackProgress = 0;  %turns on or off printing progress to screen
-maxdisp = feat_size/2; %maxdisp should be set to a value somewhat less than the mean spacing between the particles.
-
 param.mem = TrackMem;
 param.dim = Dim;
 param.good = MinTrackLength;
