@@ -1,4 +1,12 @@
 function res = mserror_calculator_4QM_0(data,tracks,param)
+
+% Calculates the error
+%
+% INPUTS
+%
+% OUTPUTS
+%
+
 %%%%
 %unpack params
 %%%%%
@@ -9,8 +17,6 @@ delta_fit = param.delta_fit;
 step_amplitude = param.step_amplitude;
 ntests = param.ntests;
 threshfact = param.threshfact;
-noise_sz = param.noise_sz;
-widthcut =  param.widthcut;
 ref_cnts = param.ref_cnts;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
