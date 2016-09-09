@@ -2,7 +2,9 @@ function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
                                  nm_per_pixel,secs_per_frame,noise_sz, ...
                                  feat_size,delta_fit,threshfact)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                             
 % SEGMENTATION AND TRACKING OF PARTICLES VIA THE 4QM METHOD IN 2D.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % INPUTS
 %
@@ -15,7 +17,20 @@ function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
 % feat_size -- [optional] Full optical radius of particle (pixels).
 % delta_fit -- [optional] Narrows analysis region around particle (pixels).
 % treshfact -- [optional] maximum intensity devided by the thresfact gives
-%              the threshold value
+%              the threshold value.
+%
+% NOTES
+%
+% The imwrite() function is unstable when windows file explorer is opened.
+%
+% DEPENDENCIES
+%
+% This program depends on the particle_tracking toolbox from the TA-lab for
+% the following functions: bpass2D_TA() and msd_manual2().
+% This program depends on the SPtrack1.0 toolbox by Eric Dufresne from Yale 
+% University for the following functions: pkfnd(), cntrd() and trackin(). 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tic
 
@@ -66,8 +81,8 @@ for set = 1:nsets
     cnt = zeros(0,5);
     
     for frame = 1:size(b,3)
-        pk = pkfnd(b(:,:,frame),thresh,feat_size);  
-        temp = cntrd(b(:,:,frame),pk,feat_size,0);
+        pk = pkfnd(b(:,:,frame),thresh,2*feat_size+1);  
+        temp = cntrd(b(:,:,frame),pk,2*feat_size+1,0);
         cnt = [cnt; [temp repmat(frame,[size(temp,1) 1])]];
     end
     
