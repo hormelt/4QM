@@ -43,7 +43,7 @@ if calibrate == 1
         scatter(p1(1)*(cnt(:,1)+p1(2)),refshft(:,1),'b')
         hold on
         scatter(p2(1)*(cnt(:,2)+p2(2)),refshft(:,2),'g')
-        getframe
+        getframe;
 
         %csvwrite([num2str(round(rand*1000)) '.csv'],[p1(1)*(cnt(:,1)+p1(2)),refshft(:,1) p2(1)*(cnt(:,2)+p2(2)),refshft(:,2)]);
 
