@@ -1,6 +1,8 @@
 function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
                                  nm_per_pixel,secs_per_frame,noise_sz, ...
-                                 feat_size,delta_fit,threshfact)
+                                 feat_size,delta_fit,threshfact, ...
+                                 TrackMem,Dim,MinTrackLength, ...
+                                 PrintTrackProgress, maxdisp)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                             
 % SEGMENTATION AND TRACKING OF PARTICLES VIA THE 4QM METHOD IN 2D.
@@ -16,9 +18,17 @@ function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
 % noise_sz -- [optional] (pixels).
 % feat_size -- [optional] Full optical diameter of particle (pixels).
 % delta_fit -- [optional] Narrows analysis region around particle (pixels).
-% treshfact -- [optional] maximum intensity devided by the thresfact gives
-%              the threshold value.
-%
+% treshfact -- [optional] maximum intensity devided by the thresfact gives 
+% the threshold value.
+% TrackMem -- [optional] Number of steps disconnected tracks can be 
+% reconnected, in case a particle is lost.
+% Dim -- [optional] Dimension of the system.
+% MinTrackLength -- [optional] minimum length of track; throw away tracks 
+% shorter than this.
+% PrintTrackProgress -- [optional] Turns on or off printing progress to screen.
+% maxdisp -- [optional] maxdisp should be set to a value somewhat less than 
+% the mean spacing between the particles.
+ 
 % NOTES
 %
 % The imwrite() function is unstable when windows file explorer is opened.
@@ -38,12 +48,17 @@ tic
 
 %% Set up particle, intensity and duration parameters.
 
-if nargin < 9, threshfact = 3.5; end
-if nargin < 8, delta_fit = 3; end
-if nargin < 7, feat_size = 15; end
-if nargin < 6, noise_sz = 1; end
-if nargin < 5, secs_per_frame = 0.011179722; end
 if nargin < 4, nm_per_pixel = 16.25; end  % zyla at 400x
+if nargin < 5, secs_per_frame = 0.011179722; end
+if nargin < 6, noise_sz = 1; end
+if nargin < 7, feat_size = 15; end
+if nargin < 8, delta_fit = 3; end
+if nargin < 9, threshfact = 3.5; end
+if nargin < 10, TrackMem = 0; end
+if nargin < 11, Dim = 2; end
+if nargin < 12, MinTrackLength = set_length; end
+if nargin < 13, PrintTrackProgress = 0; end
+if nargin < 14, maxdisp = feat_size/2; end
 
 nsets = floor(nframes/set_length);
 
@@ -122,11 +137,8 @@ for set = 1:nsets
     
                 end
                 close
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Compute averaged centers to use a reference points for rest of
-    % analysis
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
+    % Compute averaged centers to use a reference points for rest of analysis
 
     ptclecnt = 0;
     
@@ -145,9 +157,9 @@ for set = 1:nsets
     rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
     mean(rmserror);
     
-    % Now use single particle calibrations with 4QM to process real data
+    %% Now use single particle calibrations with 4QM to process real data
     
-    tracks_4QM = zeros(1,4);
+    tracks_4QM = zeros(0,4);
     
     for particle = 1:max(tracks(:,6))
         
@@ -173,8 +185,6 @@ for set = 1:nsets
             + FQM(subdata,[],[],0,calibration_params(particle,:),1)] particle*ones(frames(end),1)]];
     
     end
-    
-    tracks_4QM(1,:) = [];
     
     collective_motion_flag = 0; % 1 = subtract collective motion; 0 = leave collective motion
     msd_temp = msd_manual2(tracks_4QM,nm_per_pixel,collective_motion_flag);%-2*(rmserror^2)*nm_per_pixel^2);
