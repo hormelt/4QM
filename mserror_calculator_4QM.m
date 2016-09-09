@@ -1,23 +1,16 @@
-function res = mserror_calculator_4QM_0(data,tracks,param)
+function res = mserror_calculator_4QM(data,tracks,feat_size,delta_fit, ...
+                                      step_amplitude,ntests,threshfact, ...
+                                      ref_cnts)
 
-% Calculates the error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CALCULATES THE ERROR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % INPUTS
 %
 % OUTPUTS
 %
 
-%%%%
-%unpack params
-%%%%%
-% mean_noise = param.mean_noise;
-% std_noise = param.std_noise;
-feat_size = param.feat_size;
-delta_fit = param.delta_fit;
-step_amplitude = param.step_amplitude;
-ntests = param.ntests;
-threshfact = param.threshfact;
-ref_cnts = param.ref_cnts;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %setup the various coordinate systems and coordinate shifts used in this
