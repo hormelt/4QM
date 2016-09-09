@@ -1,12 +1,8 @@
 function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
                                  nm_per_pixel,secs_per_frame,noise_sz, ...
-                                 feat_size,delta_fit,threshfact, ...
-                                 TrackMem,Dim,MinTrackLength, ...
-                                 PrintTrackProgress, maxdisp)
+                                 feat_size,delta_fit,threshfact)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                             
 % SEGMENTATION AND TRACKING OF PARTICLES VIA THE 4QM METHOD IN 2D.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % INPUTS
 %
@@ -16,62 +12,24 @@ function [] = tracker_caller_4QM(filestub,nframes,set_length, ...
 % nm_per_pixel -- [optional] Actual pixel width (nm).
 % secs_per_frame -- [optional] Time between frames (sec).
 % noise_sz -- [optional] (pixels).
-% feat_size -- [optional] Full optical diameter of particle (pixels).
+% feat_size -- [optional] Full optical radius of particle (pixels).
 % delta_fit -- [optional] Narrows analysis region around particle (pixels).
-% treshfact -- [optional] maximum intensity devided by the thresfact gives 
-% the threshold value.
-% TrackMem -- [optional] Number of steps disconnected tracks can be 
-% reconnected, in case a particle is lost.
-% Dim -- [optional] Dimension of the system.
-% MinTrackLength -- [optional] minimum length of track; throw away tracks 
-% shorter than this.
-% PrintTrackProgress -- [optional] Turns on or off printing progress to screen.
-% maxdisp -- [optional] maxdisp should be set to a value somewhat less than 
-% the mean spacing between the particles.
- 
-% NOTES
-%
-% The imwrite() function is unstable when windows file explorer is opened.
-%
-% DEPENDENCIES
-%
-% This program depends on the particle_tracking toolbox from the TA-lab for
-% the following functions: bpass2D_TA() and msd_manual2().
-% This program depends on the SPtrack1.0 toolbox by Eric Dufresne from Yale 
-% University for the following functions: pkfnd() and cntrd(). 
-% This program depends on the trackin() function from Crocker 
-% (http://glinda.lrsm.upenn.edu/~weeks/idl). 
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% treshfact -- [optional] maximum intensity devided by the thresfact gives
+%              the threshold value
 
 tic
 
-%% Set up particle, intensity and duration parameters.
+%% Set up particle, intensity and duration parameters
 
-if nargin < 4, nm_per_pixel = 16.25; end  % zyla at 400x
-if nargin < 5, secs_per_frame = 0.011179722; end
-if nargin < 6, noise_sz = 1; end
-if nargin < 7, feat_size = 15; end
-if nargin < 8, delta_fit = 3; end
 if nargin < 9, threshfact = 3.5; end
-if nargin < 10, TrackMem = 0; end
-if nargin < 11, Dim = 2; end
-if nargin < 12, MinTrackLength = set_length; end
-if nargin < 13, PrintTrackProgress = 0; end
-if nargin < 14, maxdisp = feat_size/2; end
+if nargin < 8, delta_fit = 3; end
+if nargin < 7, feat_size = 15; end
+if nargin < 6, noise_sz = 1; end
+if nargin < 5, secs_per_frame = 0.011179722; end
+if nargin < 4, nm_per_pixel = 16.25; end  % zyla at 400x
 
 nsets = floor(nframes/set_length);
 
-% Set up parameters for pre-tracking.
-param.mem = TrackMem;
-param.dim = Dim;
-param.good = MinTrackLength;
-param.quiet = PrintTrackProgress;
-
-% Set parameters for error calculation.
-
-step_amplitude = 1;
-ntests = 100;
 
 %% Step through sets
 
@@ -86,28 +44,34 @@ for set = 1:nsets
     b = data;
     
     % Read in data + bandpasfilter
-    disp([char(10) 'Loading and bandpassing frames... '])
+    
     for frame = frmstart:frmend
         data(:,:,frame-frmstart+1) = double(imread([filestub '.tif'],frame));
         b(:,:,frame-frmstart+1) = bpass2D_TA(data(:,:,frame-frmstart+1) ...
-                                             ,noise_sz,feat_size);
-        if mod(frame-set_length*(set-1),50) == 0 || frame == set_length*set 
-           disp([char(9) num2str(frame-set_length*(set-1)) ' of ' ...
-                 num2str(set_length) ' done.']);
-        end
+                                                  ,noise_sz,feat_size);
     end
     
     % Do traditional tracking to determine averaged particle centers
-    disp([char(10) 'Pretracking... '])    
+    
     thresh = max(b(:))/threshfact;
-    cnt = zeros(0,5);
+    cnt = zeros(1,5);
     
     for frame = 1:size(b,3)
-        pk = pkfnd(b(:,:,frame),thresh,feat_size);  
-        temp = cntrd(b(:,:,frame),pk,feat_size,0);
+        pk = pkfnd(b(:,:,frame),thresh,2*feat_size);
+        size(pk)
+        temp = cntrd(b(:,:,frame),pk,2*feat_size,0);
+        size(temp)
         cnt = [cnt; [temp repmat(frame,[size(temp,1) 1])]];
     end
-       
+    
+    cnt(1,:)=[];
+    
+    param.mem = 0; %number of steps disconnected tracks can be reconnected,in case a particle is lost
+    param.dim = 2; %dimension of the system
+    param.good = size(data,3); %minimum length of track; throw away tracks shorter than this
+    param.quiet = 0; %turns on or off printing progress to screen
+    maxdisp = feat_size/2; %maxdisp should be set to a value somewhat less than the mean spacing between the particles.
+    
     tracks = trackin(cnt,maxdisp,param);
     clear cnt
     
@@ -131,7 +95,8 @@ for set = 1:nsets
                 end
                 close
     
-    % Compute averaged centers to use a reference points for rest of analysis
+    % Compute averaged centers to use a reference points for rest of
+    % analysis
 
     ptclecnt = 0;
     
@@ -143,16 +108,22 @@ for set = 1:nsets
         end
     end
     
-    % Compute noise and estimate centroiding error  
-    calibration_params = mserror_calculator_4QM(b,tracks,feat_size, ...
-                                                delta_fit,step_amplitude, ...
-                                                ntests,threshfact,ref_cnts);
+    % Compute noise and estimate centroiding error
+   
+    param.feat_size = feat_size;
+    param.delta_fit = delta_fit;
+    param.step_amplitude = 1;
+    param.ntests = 100;
+    param.threshfact = threshfact;
+    param.ref_cnts = ref_cnts;
+    
+    calibration_params = mserror_calculator_4QM(b,tracks,param);
     rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
     mean(rmserror);
     
     % Now use single particle calibrations with 4QM to process real data
     
-    tracks_4QM = zeros(0,4);
+    tracks_4QM = zeros(1,4);
     
     for particle = 1:max(tracks(:,6))
         
@@ -175,9 +146,11 @@ for set = 1:nsets
         subdata = b(rows,cols,frames);
         
         tracks_4QM = [tracks_4QM; [[[x_coarse*ones(frames(end),1), y_coarse*ones(frames(end),1), zeros(frames(end),1)]...
-            + FQM(subdata,[],[],0,calibration_params(particle,:))] particle*ones(frames(end),1)]];
+            + FQM(subdata,[],[],0,calibration_params(particle,:),1)] particle*ones(frames(end),1)]];
     
     end
+    
+    tracks_4QM(1,:) = [];
     
     collective_motion_flag = 0; % 1 = subtract collective motion; 0 = leave collective motion
     msd_temp = msd_manual2(tracks_4QM,nm_per_pixel,collective_motion_flag);%-2*(rmserror^2)*nm_per_pixel^2);
@@ -187,9 +160,8 @@ for set = 1:nsets
     
     loglog((0:size(msd_temp,1)-1),msd_temp(:,1)-2*mean(rmserror)^2,'.')
     hold on
-    getframe;
+    getframe
     
-    disp(char(9))
     toc
     
 end
