@@ -131,10 +131,7 @@ for set = 1:nsets
                 end
                 close
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Compute averaged centers to use a reference points for rest of
-    % analysis
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Compute averaged centers to use a reference points for rest of analysis
 
     ptclecnt = 0;
     
