@@ -152,7 +152,7 @@ for set = 1:nsets
     
     % Now use single particle calibrations with 4QM to process real data
     
-    tracks_4QM = zeros(1,4);
+    tracks_4QM = zeros(0,4);
     
     for particle = 1:max(tracks(:,6))
         
@@ -178,8 +178,6 @@ for set = 1:nsets
             + FQM(subdata,[],[],0,calibration_params(particle,:))] particle*ones(frames(end),1)]];
     
     end
-    
-    tracks_4QM(1,:) = [];
     
     collective_motion_flag = 0; % 1 = subtract collective motion; 0 = leave collective motion
     msd_temp = msd_manual2(tracks_4QM,nm_per_pixel,collective_motion_flag);%-2*(rmserror^2)*nm_per_pixel^2);
