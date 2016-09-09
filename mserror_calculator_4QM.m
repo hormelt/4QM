@@ -1,16 +1,23 @@
-function res = mserror_calculator_4QM(data,tracks,feat_size,delta_fit, ...
-                                      step_amplitude,ntests,threshfact, ...
-                                      ref_cnts)
+function res = mserror_calculator_4QM(data,tracks,param)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CALCULATES THE ERROR
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculates the error
 %
 % INPUTS
 %
 % OUTPUTS
 %
 
+%%%%
+%unpack params
+%%%%%
+% mean_noise = param.mean_noise;
+% std_noise = param.std_noise;
+feat_size = param.feat_size;
+delta_fit = param.delta_fit;
+step_amplitude = param.step_amplitude;
+ntests = param.ntests;
+threshfact = param.threshfact;
+ref_cnts = param.ref_cnts;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %setup the various coordinate systems and coordinate shifts used in this
@@ -96,9 +103,9 @@ for ptcle = 1:max(tracks(:,6))
         
         %         normnoisydata = (noisydata - mean(noisydata(noisydata(:)<(max(noisydata(:))/threshfact))))/std(noisydata(noisydata(:)<(max(noisydata(:))/threshfact)));
         %         scalednoisydata = normnoisydata*std_noise + mean_noise;
-        
+           
 %         calib_params(ptcle,:) = [pkcnt_4QM_calibrator_0(scalednoisydata,tracks,fake_dx,fake_dy,feat_size,delta_fit) ptcle];
-        calib_params(ptcle,:) = [FQM(shifted_data,fake_dx,fake_dy,1,[]) ptcle];
+        calib_params(ptcle,:) = [FQM(shifted_data,fake_dx,fake_dy,1,[],1) ptcle];
         
         
         %         for frame = 1:ntests
