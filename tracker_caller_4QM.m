@@ -96,7 +96,7 @@ step_amplitude = 1;
         data(:,:,frame-frmstart+1) = double(imread([filestub '.tif'],frame));
         b(:,:,frame-frmstart+1) = bpass2D_TA(data(:,:,frame-frmstart+1), ...
                                              noise_sz,feat_size);
-    end
+        end
     
     % Do traditional tracking to determine averaged particle centers
     disp([char(10) 'Pretracking... '])    
@@ -150,13 +150,11 @@ step_amplitude = 1;
         end
     end
     
-    ntests = 100;
-    
     % Compute noise and estimate centroiding error
     disp([char(9) 'Find single particle calibration parameters.'])
     calibration_params = mserror_calculator_4QM(b,tracks,feat_size, ...
                                                 delta_fit,step_amplitude, ...
-                                                ntests,threshfact,ref_cnts); %fix ntests
+                                                threshfact,ref_cnts); 
     rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
     mean(rmserror);
     
@@ -167,9 +165,9 @@ step_amplitude = 1;
     
     for particle = 1:max(tracks(:,6))
         
-        frames = tracks(tracks(:,6)==ptcle,5);
-        x_coarse = ref_cnts(ptclecnt,1);
-        y_coarse = ref_cnts(ptclecnt,2);
+        frames = tracks(tracks(:,6)==particle,5);
+        x_coarse = ref_cnts(particle,1);
+        y_coarse = ref_cnts(particle,2);
         
         if round(x_coarse) > x_coarse
             cols = (round(x_coarse)-(feat_size-delta_fit)): ...
@@ -199,7 +197,7 @@ step_amplitude = 1;
     % Calculate MSD's and write to CSV files per set
     disp([char(9) 'Calculating MSDs.'])
     collective_motion_flag = 0; % 1 = subtract collective motion; 0 = leave collective motion HARDCODED OPTION
-    msd_temp = msd_manual2(tracks_4QM,nm_per_pixel,collective_motion_flag);%-2*(rmserror^2)*nm_per_pixel^2);
+    msd_temp = msd_manual2_2(tracks_4QM,nm_per_pixel,collective_motion_flag);
 
     disp([char(9) 'Writing MSD file.'])
     csvwrite([filestub '_msd.csv'],msd_temp);
@@ -218,29 +216,30 @@ step_amplitude = 1;
     toc
 
 corrected_SPmsds = zeros(size(msd_temp,1),0);
-disp([char(10) 'Error corecction of MSDs ... '])
+disp([char(10) 'Error correction of MSDs ... '])
     
-    msds = csvread([filestub '_msd.csv']);
-    rmserrors = csvread([filestub '_rmserror.csv']);
-    
-    full_error = repmat(rmserrors',[size(msds,1) 1]);
-    
-    corrected_SPmsds = [corrected_SPmsds msds(:,3:end)-4*full_error];
-    corrected_AVEmsds = [mean(corrected_SPmsds(2:end,:),1)' ...
-                         std(corrected_SPmsds(2:end,:),[],1)'];
+% msds = csvread([filestub '_msd.csv']);
+% rmserrors = csvread([filestub '_rmserror.csv']);
+% 
+% full_error = repmat(rmserrors',[size(msds,1) 1]);
 
-    disp([char(9) 'Write corrected MSD file.'])
-    csvwrite([filestub '_corrected_msd.csv'],msd_temp);
-    disp([char(9) 'Write corrected rms error file.'])
-    csvwrite([filestub '_corrected_rmserror.csv'],rmserror);
-    
-    final_AVEmsds = nanmean(corrected_AVEmsds,1);
-    final_AVEmsds(:,2) = final_AVEmsds(:,2)/sqrt(size(corrected_AVEmsds,1));
-    
-    disp([char(9) 'Write error corrected msd file.'])    
-    csvwrite([filestub '_error_corrected_msd.csv'], ...
-             [mean(corrected_SPmsds,2) std(corrected_SPmsds,[],2) corrected_SPmsds]);
+corrected_SPmsds = [corrected_SPmsds; msd_temp-2*(rmserror^2)*nm_per_pixel^2];
 
-%corrected_SPmsds(:,1)=[];
+% corrected_AVEmsds = [mean(corrected_SPmsds(2:end,:),1)' ...
+%                      std(corrected_SPmsds(2:end,:),[],1)'];
 
-corrected_SPmsds = [(0:(size(corrected_SPmsds,1)-1))'*secs_per_frame corrected_SPmsds*nm_per_pixel^2];
+% disp([char(9) 'Write corrected MSD file.'])
+% csvwrite([filestub '_corrected_msd.csv'],msd_temp);
+% disp([char(9) 'Write corrected rms error file.'])
+% csvwrite([filestub '_corrected_rmserror.csv'],rmserror);
+% 
+% final_AVEmsds = nanmean(corrected_AVEmsds,1);
+% final_AVEmsds(:,2) = final_AVEmsds(:,2)/sqrt(size(corrected_AVEmsds,1));
+% 
+% disp([char(9) 'Write error corrected msd file.'])    
+% csvwrite([filestub '_error_corrected_msd.csv'], ...
+%          [mean(corrected_SPmsds,2) std(corrected_SPmsds,[],2) corrected_SPmsds]);
+% 
+% %corrected_SPmsds(:,1)=[];
+% 
+% corrected_SPmsds = [(0:(size(corrected_SPmsds,1)-1))'*secs_per_frame corrected_SPmsds*nm_per_pixel^2];
