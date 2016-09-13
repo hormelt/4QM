@@ -15,9 +15,6 @@ function res = FQM(subdata,fake_dx,fake_dy,calibrate,p_coef,plotopt)
 %       p2(1)*y+p2(2) are output as res = [p1 errx p2 erry]
 %
 
-
-%% step through each particle and frame then calibrate or measure
-
 cutoff = round(size(subdata,1)/2); %are we requiring even, odd input?
 
 % Define quadrants
@@ -31,6 +28,8 @@ A = squeeze(sum(sum(QUL))); B = squeeze(sum(sum(QUR)));
 C = squeeze(sum(sum(QLL))); D = squeeze(sum(sum(QLR)));
 
 if calibrate
+    
+    %% This section if we are calibrating
     
     cnt = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
     refShift = [fake_dx fake_dy];
@@ -67,6 +66,8 @@ if calibrate
     end
     
 else
+    
+    %% This line for measurements
     
     res = [p_coef(1)*(A+C-B-D)./(A+B+C+D)+p_coef(2) p_coef(4)*(A+B-C-D)./(A+B+C+D)+p_coef(5) [1:size(subdata,3)]'];
     
