@@ -1,5 +1,5 @@
 function res = mserror_calculator_4QM(data,tracks,feat_size,delta_fit, ...
-                                      step_amplitude,ntests,threshfact, ...
+                                      step_amplitude,threshfact, ...
                                       ref_cnts)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,8 +16,8 @@ function res = mserror_calculator_4QM(data,tracks,feat_size,delta_fit, ...
 %setup the various coordinate systems and coordinate shifts used in this
 %code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fake_dx = step_amplitude*(randn(ntests,1));
-fake_dy = step_amplitude*(randn(ntests,1));
+fake_dx = step_amplitude*(randn(size(data,3),1));
+fake_dy = step_amplitude*(randn(size(data,3),1));
 
 % fake_dx = 2*(rand(ntests,1)-0.5)*step_amplitude;
 % fake_dy = 2*(rand(ntests,1)-0.5)*step_amplitude;
@@ -75,7 +75,7 @@ for ptcle = 1:max(tracks(:,6))
         
         ref_subdata = subdata(:,:,ref_step);
         
-        for frame = 1:ntests
+        for frame = 1:size(data,3)
             
             shiftedx = xsub + fake_dx(frame);
             shiftedy = ysub + fake_dy(frame);
