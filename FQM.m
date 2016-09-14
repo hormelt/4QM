@@ -44,26 +44,26 @@ if calibrate
         [range(refShift(:,2))/range(cnt(:,2)),mean(refShift(:,2))]);
     erry = sqrt(fvaly);
     
-    if (errx<=1e-1) && (erry<=1e-1)
+    %     if (errx<=1e-1) && (erry<=1e-1)
+    
+    %csvwrite([num2str(round(rand*1000)) '.csv'],[p1(1)*(cnt(:,1)+p1(2)),refshft(:,1) p2(1)*(cnt(:,2)+p2(2)),refshft(:,2)]);
+    
+    res = [p1 errx p2 erry];
+    
+    if plotopt
         
-        %csvwrite([num2str(round(rand*1000)) '.csv'],[p1(1)*(cnt(:,1)+p1(2)),refshft(:,1) p2(1)*(cnt(:,2)+p2(2)),refshft(:,2)]);
-        
-        res = [p1 errx p2 erry];
-        
-        if plotopt
-            
-            scatter(p1(1)*(cnt(:,1)+p1(2)),refShift(:,1),'b')
-            hold on
-            scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
-            getframe;
-            
-        end
-        
-    else
-        
-        res = [NaN NaN NaN NaN NaN NaN];
+        scatter(p1(1)*(cnt(:,1)+p1(2)),refShift(:,1),'b')
+        hold on
+        scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
+        getframe;
         
     end
+    %
+    %     else
+    %
+    %         res = [NaN NaN NaN NaN NaN NaN];
+    %
+    %     end
     
 else
     
