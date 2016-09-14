@@ -28,7 +28,8 @@ function [] = tracker_caller_4QM(filestub,nframes, ...
 % PrintTrackProgress -- [optional] Turns on or off printing progress to screen.
 % maxdisp -- [optional] maxdisp should be set to a value somewhat less than 
 % the mean spacing between the particles.
- 
+% plotopt -- Options for plotting data ['simple','bandpassed',0] 
+%
 % NOTES
 %
 % The imwrite() function is unstable when windows file explorer is opened.
@@ -113,28 +114,17 @@ step_amplitude = 1;
     Ntracks = size(unique(tracks(:,6)));
     disp([char(9) 'Found a total of ' num2str(Ntracks(1)) ' tracks.'])
     clear cnt
-    
-    if plotopt
-        % Visually check tracks
-        disp([char(9) 'Visual check of tracks.'])
-                for frame = 1:size(data,3)
-    
-                    tempx = tracks(tracks(:,5)==frame,1);
-                    tempy = tracks(tracks(:,5)==frame,2);
-    
-                    hold off
-                    imagesc(data(:,:,frame))
-                    colormap gray
-                    hold on
-                    scatter(tempx,tempy,'r')
-                    truesize
-                    f = getframe;
-%                     imwrite(frame2im(f),[filestub 'tracking_movie.tif'], ...
-%                             'tiff','compression','none','writemode','append');
-    
-        end
-        close
-                
+
+    % Visually check tracks if desired.
+    switch plotopt
+        case 'simple'
+            disp([char(9) 'Visual check of tracks.'])
+            PlotPretracking(data,b,tracks,feat_size,nm_per_pixel,filestub,'simple')
+        case 'bandpass'
+            disp([char(9) 'Visual check of tracks.'])
+            PlotPretracking(data,b,tracks,feat_size,nm_per_pixel,filestub,'bandpass')            
+        otherwise
+            disp([char(9) 'No visual check. If desired use plotopt.'])              
     end
                 
     % Compute averaged centers to use as reference points for rest of analysis
