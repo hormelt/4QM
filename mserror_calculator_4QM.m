@@ -22,13 +22,9 @@ fake_dy = step_amplitude*(randn(size(data,3),1));
 % fake_dx = 2*(rand(ntests,1)-0.5)*step_amplitude;
 % fake_dy = 2*(rand(ntests,1)-0.5)*step_amplitude;
 
-x = 1:size(data,2);
-y = 1:size(data,1);
-[x y] = meshgrid(x,y);
-
 xsub = 1:(2*(feat_size-delta_fit));
 ysub = 1:(2*(feat_size-delta_fit));
-[xsub ysub] = meshgrid(xsub,ysub);
+[xsub, ysub] = meshgrid(xsub,ysub);
 
 %%%%%%%%%%%%%%%%
 %step through particles, find best frame to use, make sure noise in
@@ -45,24 +41,13 @@ for ptcle = 1:max(tracks(:,6))
         ptclecnt = ptclecnt + 1;
         
         distance_metric = sqrt((subtracks(:,1)-ref_cnts(ptclecnt,1)).^2 + (subtracks(:,2)-ref_cnts(ptclecnt,2)).^2);
-        [C ref_step] = min(distance_metric);
+        [~, ref_step] = min(distance_metric);
         
-        frames = tracks(tracks(:,6)==ptcle,5);
-        
+        frames = tracks(tracks(:,6)==ptcle,5);       
         x_coarse = ref_cnts(ptclecnt,1);
-        y_coarse = ref_cnts(ptclecnt,2);
-        
-        if round(x_coarse) > x_coarse
-            cols = (round(x_coarse)-(feat_size-delta_fit)):(round(x_coarse)+(feat_size-delta_fit))-1;
-        else
-            cols = (round(x_coarse)-(feat_size-delta_fit))+1:(round(x_coarse)+(feat_size-delta_fit));
-        end
-        
-        if round(y_coarse) > y_coarse
-            rows = (round(y_coarse)-(feat_size-delta_fit)):(round(y_coarse)+(feat_size-delta_fit))-1;
-        else
-           rows = (round(y_coarse)-(feat_size-delta_fit))+1:(round(y_coarse)+(feat_size-delta_fit));
-        end
+        y_coarse = ref_cnts(ptclecnt,2);        
+        cols = SetAxisSubdata(x_coarse,feat_size,delta_fit);
+        rows = SetAxisSubdata(y_coarse,feat_size,delta_fit);
         
         %     first do calibration using shifted_data
         

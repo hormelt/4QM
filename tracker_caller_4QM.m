@@ -160,31 +160,15 @@ step_amplitude = 1;
     
     %% Now use single particle calibrations with 4QM to process real data
     disp([char(10) '4QM ... '])
-    disp([char(9) 'Processing real dat.'])
+    disp([char(9) 'Processing real data.'])
     tracks_4QM = zeros(0,4);
     
-    for particle = 1:max(tracks(:,6))
-        
+    for particle = 1:max(tracks(:,6))       
         frames = tracks(tracks(:,6)==particle,5);
         x_coarse = ref_cnts(particle,1);
-        y_coarse = ref_cnts(particle,2);
-        
-        if round(x_coarse) > x_coarse
-            cols = (round(x_coarse)-(feat_size-delta_fit)): ...
-                   (round(x_coarse)+(feat_size-delta_fit))-1;
-        else
-            cols = (round(x_coarse)-(feat_size-delta_fit))+1: ...
-                   (round(x_coarse)+(feat_size-delta_fit));
-        end
-        
-        if round(y_coarse) > y_coarse
-            rows = (round(y_coarse)-(feat_size-delta_fit)): ...
-                   (round(y_coarse)+(feat_size-delta_fit))-1;
-        else
-           rows = (round(y_coarse)-(feat_size-delta_fit))+1: ...
-                  (round(y_coarse)+(feat_size-delta_fit));
-        end
-        
+        y_coarse = ref_cnts(particle,2);      
+        cols = SetAxisSubdata(x_coarse,feat_size,delta_fit);
+        rows = SetAxisSubdata(y_coarse,feat_size,delta_fit);      
         subdata = b(rows,cols,frames);
         
         tracks_4QM = [tracks_4QM; [x_coarse*ones(numel(frames),1), ...
