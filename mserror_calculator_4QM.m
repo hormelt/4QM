@@ -2,20 +2,22 @@ function res = mserror_calculator_4QM(data,tracks,feat_size,delta_fit, ...
                                       step_amplitude,threshfact, ...
                                       ref_cnts)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CALCULATES THE ERROR
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculates the mean squared error in the paticle position upon subpixel
+% displacements
 %
-% INPUTS
+% INPUTS:
+%    data: Collection of image frames. 
+%    tracks: The collection of particle tracks in the frames.
+%    feat_size: Full optical diameter of particle (pixels).
+%    delta_fit: Narrows analysis region around particle (pixels).
+%    step_amplitude: Maximum Amplitude of shift.
+%    ntests: Number of shift tests.
+%    ref_cnts: The value used as a reference for the particle centers. 
 %
-% OUTPUTS
-%
+% OUTPUTS:
+%    res: The calibration parameters. [p1 errx p2 erry]
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%setup the various coordinate systems and coordinate shifts used in this
-%code
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% setup the various coordinate systems and coordinate shifts used in this code
 fake_dx = step_amplitude*(randn(size(data,3),1));
 fake_dy = step_amplitude*(randn(size(data,3),1));
 
@@ -26,10 +28,8 @@ xsub = 1:(2*(feat_size-delta_fit));
 ysub = 1:(2*(feat_size-delta_fit));
 [xsub, ysub] = meshgrid(xsub,ysub);
 
-%%%%%%%%%%%%%%%%
-%step through particles, find best frame to use, make sure noise in
-%calibration data represents noise in real data
-%%%%%%%%%%%%%%%%%
+%% step through particles, find best frame to use, make sure noise in
+% calibration data represents noise in real data
 
 ptclecnt = 0;
 
@@ -49,22 +49,19 @@ for ptcle = 1:max(tracks(:,6))
         cols = SetAxisSubdata(x_coarse,feat_size,delta_fit);
         rows = SetAxisSubdata(y_coarse,feat_size,delta_fit);
         
-        %     first do calibration using shifted_data
-        
-        subdata = data(rows,cols,frames);
-        
+        %     first do calibration using shifted_data       
+        subdata = data(rows,cols,frames);    
         mean_noise = mean(subdata(subdata(:)<(max(subdata(:))/threshfact))); % target mean in noise
         std_noise = std(subdata(subdata(:)<(max(subdata(:))/threshfact))); % target std in noise
         max_noise = max(abs(subdata(subdata(:)<(max(subdata(:))/threshfact))-mean_noise));
         SNR = mean(subdata(round(size(subdata,1)/2),round(size(subdata,2)/2),:))/mean_noise; %approximate signal to noise ratio
         
         ref_subdata = subdata(:,:,ref_step);
-        
-        for frame = 1:size(data,3)
-            
+        shifted_data = zeros([size(xsub),size(data,3)]);        
+
+        for frame = 1:size(data,3)           
             shiftedx = xsub + fake_dx(frame);
-            shiftedy = ysub + fake_dy(frame);
-            
+            shiftedy = ysub + fake_dy(frame);            
             shifted_data(:,:,frame) = interp2(xsub,ysub,ref_subdata,shiftedx,shiftedy);
         end
         

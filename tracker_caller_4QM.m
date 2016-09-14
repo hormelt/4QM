@@ -115,9 +115,8 @@ step_amplitude = 1;
     clear cnt
     
     if plotopt
-    
-                % Visually check tracks
-                disp([char(9) 'Visual check of tracks.'])
+        % Visually check tracks
+        disp([char(9) 'Visual check of tracks.'])
                 for frame = 1:size(data,3)
     
                     tempx = tracks(tracks(:,5)==frame,1);
@@ -133,8 +132,8 @@ step_amplitude = 1;
 %                     imwrite(frame2im(f),[filestub 'tracking_movie.tif'], ...
 %                             'tiff','compression','none','writemode','append');
     
-                end
-                close
+        end
+        close
                 
     end
                 
