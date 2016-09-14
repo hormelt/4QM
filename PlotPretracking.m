@@ -91,4 +91,8 @@ for frame = 1:size(data,3)
     end
 end
 close
+<<<<<<< HEAD
 end
+=======
+end
+>>>>>>> 4107f2ab22e3c274933e723d7e9e1c5b30102c15
