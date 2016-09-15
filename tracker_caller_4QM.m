@@ -158,7 +158,7 @@ end
 disp([char(9) 'Find single particle calibration parameters.'])
 calibration_params = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
                                             p.DeltaFit,StepAmplitude, ...
-                                            p.ThreshFact,refCenters,p.PlotOpt); 
+                                            refCenters,p.PlotOpt); 
 rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
 mean(rmserror);
     
