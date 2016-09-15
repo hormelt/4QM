@@ -6,7 +6,7 @@ function [A,B,C,D] = FQM(subData)
 %   subData: Stack of images.
 %
 % OUTPUTS:
-%   [A,B,C,D]: The quadrants UL,UR,LL and LR.
+%   [A,B,C,D]: Sum over the four quadrants UL,UR,LL and LR.
 
 % Find the middle of the frame.
 Middle = size(subData,1)/2;

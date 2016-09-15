@@ -1,5 +1,5 @@
 function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,ThreshFact,refCenters,PlotOpt)
+                                      StepAmplitude,refCenters,PlotOpt)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -106,11 +106,7 @@ for ParticleID = 1:max(Tracks(:,6))
         [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(cnt(:,2)+p2(2))-refShift(:,2)).^2,1)),...
                      [range(refShift(:,2))/range(cnt(:,2)),mean(refShift(:,2))]);
         erry = sqrt(fvaly);
-    
-        %     if (errx<=1e-1) && (erry<=1e-1)
-    
-        %csvwrite([num2str(round(rand*1000)) '.csv'],[p1(1)*(cnt(:,1)+p1(2)),refshft(:,1) p2(1)*(cnt(:,2)+p2(2)),refshft(:,2)]);
-    
+           
         res1 = [p1 errx p2 erry];
     
         if PlotOpt
@@ -119,6 +115,7 @@ for ParticleID = 1:max(Tracks(:,6))
             scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
             getframe;  
         end      
+        close
         
         CalibParams(ParticleID,:) = [res1 ParticleID];
     end
