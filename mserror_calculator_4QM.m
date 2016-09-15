@@ -1,5 +1,5 @@
 function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,ThreshFact,refCenters)
+                                      StepAmplitude,ThreshFact,refCenters,PlotOpt)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -86,11 +86,41 @@ for ParticleID = 1:max(Tracks(:,6))
             shiftedData(:,:,j) = interp2(xGrid,yGrid,refsubData, ...
                                          shiftedxGrid,shiftedyGrid);
         end
-
+        
+        
         % Replace NaN resulting from interp2 by data from the subrefFrame
-        shiftedData(isnan(shiftedData(:))) = subData(isnan(shiftedData(:)));  
-        CalibParams(ParticleID,:) = [FQM(shiftedData,dxTrialShift, ...
-                                      dyTrialShift,1,[],1) ParticleID];
+        shiftedData(isnan(shiftedData(:))) = subData(isnan(shiftedData(:)));
+        
+        
+        % Start Calibration
+        [A,B,C,D] = FQM(shiftedData);
+        cnt = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
+        refShift = [dxTrialShift dyTrialShift];
+    
+        % now find the shift that gives the smallest error
+    
+        [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(cnt(:,1)+p1(2))-refShift(:,1)).^2,1)),...
+                     [range(refShift(:,1))/range(cnt(:,1)),mean(refShift(:,1))]);
+        errx = sqrt(fvalx);
+    
+        [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(cnt(:,2)+p2(2))-refShift(:,2)).^2,1)),...
+                     [range(refShift(:,2))/range(cnt(:,2)),mean(refShift(:,2))]);
+        erry = sqrt(fvaly);
+    
+        %     if (errx<=1e-1) && (erry<=1e-1)
+    
+        %csvwrite([num2str(round(rand*1000)) '.csv'],[p1(1)*(cnt(:,1)+p1(2)),refshft(:,1) p2(1)*(cnt(:,2)+p2(2)),refshft(:,2)]);
+    
+        res1 = [p1 errx p2 erry];
+    
+        if PlotOpt
+            scatter(p1(1)*(cnt(:,1)+p1(2)),refShift(:,1),'b')
+            hold on
+            scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
+            getframe;  
+        end      
+        
+        CalibParams(ParticleID,:) = [res1 ParticleID];
     end
 end
 
