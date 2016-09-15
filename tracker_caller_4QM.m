@@ -104,25 +104,25 @@ CollectiveMotionFlag = 0; % 1 = subtract collective motion;
     
 % Set up arrays   
 Data = zeros(FrameWidth,FrameHeight,NFrames);
-B = Data;
+bpData = Data;
     
 % Read in data + bandpasfilter
 disp([char(10) 'Loading and bandpassing frames... '])
 
 for Frame = p.FrameStart:p.NFrames
     Data(:,:,Frame-p.FrameStart+1) = double(imread([FileStub '.tif'],Frame));
-    B(:,:,Frame-p.FrameStart+1) = bpass2D_TA(Data(:,:,Frame-p.FrameStart+1), ...
+    bpData(:,:,Frame-p.FrameStart+1) = bpass2D_TA(Data(:,:,Frame-p.FrameStart+1), ...
                                              p.NoiseSz,p.FeatSize);
 end
     
 % Do traditional tracking to determine averaged particle centers
 disp([char(10) 'Pretracking... '])
-Threshold = max(B(:))/p.ThreshFact;
+Threshold = max(bpData(:))/p.ThreshFact;
 Centers = zeros(0,5);  
 
-for Frame = 1:size(B,3)
-    Peaks = pkfnd(B(:,:,Frame),Threshold,p.FeatSize);  
-    temp = cntrd(B(:,:,Frame),Peaks,p.FeatSize,0);
+for Frame = 1:size(bpData,3)
+    Peaks = pkfnd(bpData(:,:,Frame),Threshold,p.FeatSize);  
+    temp = cntrd(bpData(:,:,Frame),Peaks,p.FeatSize,0);
     Centers = [Centers; [temp repmat(Frame,[size(temp,1) 1])]];
 end
 
@@ -137,10 +137,10 @@ disp([char(9) 'Found a total of ' num2str(NParticles) ' particles' ...
 switch p.PlotOpt
     case 'simple'
         disp([char(9) 'Visual check of tracks.'])
-        PlotPretracking(Data,B,Tracks,p.FeatSize,p.NmPerPixel,FileStub,'simple')
+        PlotPretracking(Data,bpData,Tracks,p.FeatSize,p.NmPerPixel,FileStub,'simple')
     case 'bandpass'
         disp([char(9) 'Visual check of tracks.'])
-        PlotPretracking(Data,B,Tracks,p.FeatSize,p.NmPerPixel,FileStub,'bandpass')            
+        PlotPretracking(Data,bpData,Tracks,p.FeatSize,p.NmPerPixel,FileStub,'bandpass')            
     otherwise
         disp([char(9) 'No visual check. If desired use PlotOpt.'])              
 end
@@ -156,9 +156,9 @@ end
     
 % Compute noise and estimate centroiding error
 disp([char(9) 'Find single particle calibration parameters.'])
-calibration_params = mserror_calculator_4QM(B,Tracks,p.FeatSize, ...
+calibration_params = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
                                             p.DeltaFit,StepAmplitude, ...
-                                            p.ThreshFact,refCenters); 
+                                            p.ThreshFact,refCenters,p.PlotOpt); 
 rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
 mean(rmserror);
     
@@ -173,12 +173,15 @@ for ParticleID = 1:NParticles
     yCoarse = refCenters(ParticleID,2);      
     Cols = SetAxisSubdata(xCoarse,p.FeatSize,p.DeltaFit);
     Rows = SetAxisSubdata(yCoarse,p.FeatSize,p.DeltaFit);      
-    subData = B(Rows,Cols,Frames);
-       
+    subData = bpData(Rows,Cols,Frames);
+    p_coef = calibration_params(ParticleID,:);
+    [A,B,C,D] = FQM(subData);
+    res2 = [p_coef(1)*(A+C-B-D)./(A+B+C+D)+p_coef(2) p_coef(4)*(A+B-C-D)./(A+B+C+D)+p_coef(5) [1:size(subData,3)]'];
+
+    %FQM(subData,[],[],0,calibration_params(ParticleID,:),1)
     QMTracks = [QMTracks; [xCoarse*ones(numel(Frames),1), ...
                 yCoarse*ones(numel(Frames),1), zeros(numel(Frames),1)] ...
-                + FQM(subData,[],[],0,calibration_params(ParticleID,:),1) ...
-                ParticleID*ones(numel(Frames),1)];
+                + res2 ParticleID*ones(numel(Frames),1)];
     
 end
     
