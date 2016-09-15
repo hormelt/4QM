@@ -162,27 +162,33 @@ calibration_params = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
 rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
 mean(rmserror);
     
-%% Now use single particle calibrations with 4QM to process real data
+%% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
-QMTracks = zeros(0,4);
-
-for ParticleID = 1:NParticles      
-    Frames = Tracks(Tracks(:,6)==ParticleID,5);
+QMTracks = zeros(size(Tracks,1),4);
+j = 1;
+for ParticleID = 1:NParticles 
+    % Construct subdata
+    TrackFrames = Tracks(Tracks(:,6)==ParticleID,5);
+    NTrackFrames = numel(TrackFrames)
     xCoarse = refCenters(ParticleID,1);
     yCoarse = refCenters(ParticleID,2);      
     Cols = SetAxisSubdata(xCoarse,p.FeatSize,p.DeltaFit);
     Rows = SetAxisSubdata(yCoarse,p.FeatSize,p.DeltaFit);      
-    subData = bpData(Rows,Cols,Frames);
-    p_coef = calibration_params(ParticleID,:);
-    [A,B,C,D] = FQM(subData);
-    res2 = [p_coef(1)*(A+C-B-D)./(A+B+C+D)+p_coef(2) p_coef(4)*(A+B-C-D)./(A+B+C+D)+p_coef(5) [1:size(subData,3)]'];
-
-    %FQM(subData,[],[],0,calibration_params(ParticleID,:),1)
-    QMTracks = [QMTracks; [xCoarse*ones(numel(Frames),1), ...
-                yCoarse*ones(numel(Frames),1), zeros(numel(Frames),1)] ...
-                + res2 ParticleID*ones(numel(Frames),1)];
+    subData = bpData(Rows,Cols,TrackFrames);
     
+    % Find the corrections for the pretrack data
+    pCoef = calibration_params(ParticleID,:);
+    [A,B,C,D] = FQM(subData);
+    TrackCorrection = [pCoef(1)*(A+C-B-D)./(A+B+C+D)+pCoef(2) ...
+                       pCoef(4)*(A+B-C-D)./(A+B+C+D)+pCoef(5) ...
+                       [1:size(subData,3)]'];
+    preTrack = [xCoarse*ones(NTrackFrames,1), ...
+                  yCoarse*ones(NTrackFrames,1), ...
+                  zeros(NTrackFrames,1)];
+    correctedTrack = preTrack + TrackCorrection;
+    QMTracks(j:j+NTrackFrames-1,:) = [correctedTrack ParticleID*ones(numel(TrackFrames),1)];
+    j = j + NTrackFrames;
 end
     
 % Calculate MSDs and errors
