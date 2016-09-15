@@ -1,10 +1,9 @@
-function [] = tracker_caller_4QM(FileStub,NFrames,varargin)
+function [] = tracker_caller_4QM(FileStub,varargin)
                            
 % Segmentation and Tracking of Particles via the 4QM method in 2D.
 %
 % INPUTS:
 %   FileStub: Path to the image_stack to be analyzed. 
-%   NFrames: Number of frames in the image stack. 
 %   NmPerPixel: [optional] Actual pixel width (nm).
 %   SecsPerFrame: [optional] Time between frames (sec).
 %   NoiseSz: [optional] (pixels).
@@ -59,7 +58,6 @@ f = inputParser;
 f.CaseSensitive = 0;
 
 addRequired(f,'FileStub',@ischar)
-addRequired(f,'NFrames',@isnumeric)
 addOptional(f,'NmPerPixel',defNmPerPixel,@isnumeric)
 addOptional(f,'SecsPerFrame',defSecsPerFrame,@isnumeric)
 addOptional(f,'NoiseSz',defNoiseSz,@isnumeric)
@@ -75,8 +73,14 @@ addOptional(f,'FrameStart',defp.FrameStart,@isnumeric)
 addOptional(f,'PlotOpt',defPlotOpt,checkPlotOpt)
 
 % Parse the values from f and put results in p.
-parse(f,FileStub,NFrames,varargin{:})
+parse(f,FileStub,varargin{:})
 p = f.Results;
+
+% Get info about data.
+info = imfinfo([FileStub '.tif']);
+FrameWidth = info.Width;  
+FrameHeight = info.Height;
+NFrames = numel(info);
 
 % Set up parameters for pre-tracking.
 param.mem = p.TrackMem;
@@ -94,8 +98,7 @@ CollectiveMotionFlag = 0; % 1 = subtract collective motion;
 %% Particle Tracking 
     
 % Set up arrays   
-temp = double(imread([FileStub '.tif'],p.FrameStart));
-Data = zeros(size(temp,1),size(temp,2),NFrames);
+Data = zeros(FrameWidth,FrameHeight,NFrames);
 B = Data;
     
 % Read in data + bandpasfilter
@@ -120,8 +123,10 @@ end
 
 Tracks = trackin(Centers,p.MaxDisp,param);
 NParticles = max(Tracks(:,6));
+NTracks = size(unique(Tracks(:,6)),1);
 
-disp([char(9) 'Found a total of ' num2str(NParticles(1)) ' particles.'])
+disp([char(9) 'Found a total of ' num2str(NParticles) ' particles' ...
+      ' and ' num2str(NTracks) ' tracks.' ]);
 
 % Visually check tracks if desired.
 switch p.PlotOpt
