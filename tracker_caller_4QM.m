@@ -37,6 +37,10 @@ tic
 %% Set up particle, intensity and duration parameters.
 
 % Default Values.
+
+info = imfinfo([FileStub '.tif']);
+
+defNFrames = numel(info);
 defNmPerPixel = 16.25; % zyla at 400x
 defSecsPerFrame = 0.011179722;
 defNoiseSz = 1;
@@ -58,6 +62,10 @@ f = inputParser;
 f.CaseSensitive = 0;
 
 addRequired(f,'FileStub',@ischar)
+<<<<<<< HEAD
+=======
+addOptional(f,'NFrames',defNFrames,@isnumeric)
+>>>>>>> master
 addOptional(f,'NmPerPixel',defNmPerPixel,@isnumeric)
 addOptional(f,'SecsPerFrame',defSecsPerFrame,@isnumeric)
 addOptional(f,'NoiseSz',defNoiseSz,@isnumeric)
@@ -104,7 +112,7 @@ B = Data;
 % Read in data + bandpasfilter
 disp([char(10) 'Loading and bandpassing frames... '])
 
-for Frame = p.FrameStart:NFrames
+for Frame = p.FrameStart:p.NFrames
     Data(:,:,Frame-p.FrameStart+1) = double(imread([FileStub '.tif'],Frame));
     B(:,:,Frame-p.FrameStart+1) = bpass2D_TA(Data(:,:,Frame-p.FrameStart+1), ...
                                              p.NoiseSz,p.FeatSize);
