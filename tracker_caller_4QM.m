@@ -62,10 +62,7 @@ f = inputParser;
 f.CaseSensitive = 0;
 
 addRequired(f,'FileStub',@ischar)
-<<<<<<< HEAD
-=======
 addOptional(f,'NFrames',defNFrames,@isnumeric)
->>>>>>> master
 addOptional(f,'NmPerPixel',defNmPerPixel,@isnumeric)
 addOptional(f,'SecsPerFrame',defSecsPerFrame,@isnumeric)
 addOptional(f,'NoiseSz',defNoiseSz,@isnumeric)
