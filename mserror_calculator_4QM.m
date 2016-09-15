@@ -15,73 +15,85 @@ function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
 %
 % OUTPUTS:
 %   res: The calibration parameters. [p1 errx p2 erry].
+%
+% CODE FOR FUTURE:
+%   Currently the amplitude of the trial shifts is determined by
+%   StepAmplitude. It is best to set the StepAmplitude in the trial shifts 
+%   equal to the amplitude of the shifts in the real data.
+%   In the future we would like to determine the shift amplitude from the 
+%   real data. The code snippets below could be used for that. Also there
+%   are some ideas about adding noise?
+%
+%   % Make sure noise in calibration data represents noise in real data
+%   mean_noise = mean(subdata(subdata(:)<(max(subdata(:))/ThreshFact))); % target mean in noise
+%   std_noise = std(subdata(subdata(:)<(max(subdata(:))/ThreshFact))); % target std in noise
+%   max_noise = max(abs(subdata(subdata(:)<(max(subdata(:))/ThreshFact))-mean_noise));
+%   SNR = mean(subdata(round(size(subdata,1)/2),round(size(subdata,2)/2),:))/mean_noise; %approximate signal to noise ratio
+%   temp_noise = 2*(rand([size(shifted_data)])-0.5)*std_noise/2 + mean_noise;
 
-%% setup the various coordinate systems and coordinate shifts used in this code
-xsub = 1:(2*(FeatSize-DeltaFit));
-ysub = 1:(2*(FeatSize-DeltaFit));
-[xsub, ysub] = meshgrid(xsub,ysub);
+%   mean_shifted = mean(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % mean in shifted noise
+%   std_shifted = std(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % std in shifted noise
+%   normdata = (shifted_data - mean_shifted)/std_shifted;        
+%   added_noise = 2*(rand([size(normdata)])-0.5)/(0.5*SNR);       
+%   noisydata = normdata + added_noise;        
+%   normnoisydata = (noisydata - mean(noisydata(noisydata(:)<(max(noisydata(:))/threshfact))))/std(noisydata(noisydata(:)<(max(noisydata(:))/threshfact)));
+%   scalednoisydata = normnoisydata*std_noise + mean_noise;        
+%   calib_params(ptcle,:) = [pkcnt_4QM_calibrator_0(scalednoisydata,tracks,fake_dx,fake_dy,feat_size,delta_fit) ptcle];
+%   for frame = 1:NFrames
+%       imagesc([subdata(:,:,frame) shifted_data(:,:,frame) scalednoisydata(:,:,frame)])
+%       getframe
+%   end
 
-%% step through particles, find best frame to use.
 
+%% Setup pixel grid for subdata frames.
+xGrid = 1:(2*(FeatSize-DeltaFit));
+yGrid = 1:(2*(FeatSize-DeltaFit));
+[xGrid, yGrid] = meshgrid(xGrid,yGrid);
+
+%% Find calibration parameters for every particle with tracks.
 TrackID = 0;
 
 for ParticleID = 1:max(Tracks(:,6))  
-    subTracks = Tracks(Tracks(:,6)==ParticleID,1:2);   
+    subTracks = Tracks(Tracks(:,6)==ParticleID,:);
+    
     if ~isempty(subTracks)
         TrackID = TrackID + 1;
-        metricDistance = sqrt((subTracks(:,1)-refCenters(TrackID,1)).^2 + (subTracks(:,2)-refCenters(TrackID,2)).^2);
-        [~, refStep] = min(metricDistance);
+        NFrames = numel(subTracks(:,5));
         
-        frames = Tracks(Tracks(:,6)==ParticleID,5);
+        % Determine the subData frame around the particle of interest.
         xCoarse = refCenters(TrackID,1);
         yCoarse = refCenters(TrackID,2);
         Cols = SetAxisSubdata(xCoarse,FeatSize,DeltaFit);
         Rows = SetAxisSubdata(yCoarse,FeatSize,DeltaFit);
-        subdata = Data(Rows,Cols,frames);
+        subData = Data(Rows,Cols,subTracks(:,5));
          
-        %     first do calibration using shiftedData
-        ref_subData = subdata(:,:,refStep);
-        shiftedData = zeros([size(xsub),numel(frames)]);
+        % Find the frame in which the particle is closest to its refCenter.
+        metricDistance = sqrt((subTracks(:,1)-refCenters(TrackID,1)).^2 ...
+                         + (subTracks(:,2)-refCenters(TrackID,2)).^2);
+        [~, refStep] = min(metricDistance);
+        refsubData = subData(:,:,refStep);
+
+        % Determine the trial shifts of the refFrame for 4QM calibration.
+        dxTrialShift = StepAmplitude*(randn(NFrames,1));
+        dyTrialShift = StepAmplitude*(randn(NFrames,1));
         
-        fake_dx = StepAmplitude*(randn(numel(frames),1));
-        fake_dy = StepAmplitude*(randn(numel(frames),1));
+        % Create the trial data by shifting refsubData by TrialShift.
+        shiftedData = zeros([size(xGrid),NFrames]);
         
-        for j = 1:numel(frames)
-            shiftedx = xsub + fake_dx(j);
-            shiftedy = ysub + fake_dy(j);
-            shiftedData(:,:,j) = interp2(xsub,ysub,ref_subData,shiftedx,shiftedy);
+        for j = 1:NFrames
+            shiftedxGrid = xGrid + dxTrialShift(j);
+            shiftedyGrid = yGrid + dyTrialShift(j);
+            shiftedData(:,:,j) = interp2(xGrid,yGrid,refsubData, ...
+                                         shiftedxGrid,shiftedyGrid);
         end
 
-% Make sure noise in calibration data represents noise in real data
-
-%         mean_noise = mean(subdata(subdata(:)<(max(subdata(:))/ThreshFact))); % target mean in noise
-%         std_noise = std(subdata(subdata(:)<(max(subdata(:))/ThreshFact))); % target std in noise
-%         max_noise = max(abs(subdata(subdata(:)<(max(subdata(:))/ThreshFact))-mean_noise));
-%         SNR = mean(subdata(round(size(subdata,1)/2),round(size(subdata,2)/2),:))/mean_noise; %approximate signal to noise ratio
-%         temp_noise = 2*(rand([size(shifted_data)])-0.5)*std_noise/2 + mean_noise;
-
-        shiftedData(isnan(shiftedData(:))) = subdata(isnan(shiftedData(:)));
-        
-%         mean_shifted = mean(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % mean in shifted noise
-%         std_shifted = std(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % std in shifted noise
-%         normdata = (shifted_data - mean_shifted)/std_shifted;        
-%         added_noise = 2*(rand([size(normdata)])-0.5)/(0.5*SNR);       
-%         noisydata = normdata + added_noise;        
-%         normnoisydata = (noisydata - mean(noisydata(noisydata(:)<(max(noisydata(:))/threshfact))))/std(noisydata(noisydata(:)<(max(noisydata(:))/threshfact)));
-%         scalednoisydata = normnoisydata*std_noise + mean_noise;        
-%         calib_params(ptcle,:) = [pkcnt_4QM_calibrator_0(scalednoisydata,tracks,fake_dx,fake_dy,feat_size,delta_fit) ptcle];
-%         for frame = 1:numel(frames)
-%             imagesc([subdata(:,:,frame) shifted_data(:,:,frame) scalednoisydata(:,:,frame)])
-%             getframe
-%         end
-        calib_params(ParticleID,:) = [FQM(shiftedData,fake_dx,fake_dy,1,[],1) ParticleID];
-        
-        
-
-        
+        % Replace NaN resulting from interp2 by data from the subrefFrame
+        shiftedData(isnan(shiftedData(:))) = subData(isnan(shiftedData(:)));  
+        CalibParams(ParticleID,:) = [FQM(shiftedData,dxTrialShift, ...
+                                      dyTrialShift,1,[],1) ParticleID];
     end
 end
 
-res = calib_params;
+res = CalibParams;
 
 end
