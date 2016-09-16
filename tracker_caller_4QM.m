@@ -105,7 +105,7 @@ CollectiveMotionFlag = 0; % 1 = subtract collective motion;
 %% Particle Tracking
 
 % Set up arrays
-Data = zeros(FrameWidth,FrameHeight,NFrames);
+Data = zeros(FrameHeight,FrameWidth,NFrames);
 bpData = Data;
 
 % Read in data + bandpasfilter
