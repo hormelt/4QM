@@ -1,5 +1,5 @@
 function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,refCenters,PlotOpt)
+                                      StepAmplitude,refCenters,PlotOpt,ErrorThresh)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -117,10 +117,15 @@ for ParticleID = 1:max(Tracks(:,6))
         end      
         close
         
-        CalibParams(ParticleID,:) = [res1 ParticleID];
+        if (errx<ErrorThresh) && (erry<ErrorThresh)
+            CalibParams(ParticleID,:) = [res1 ParticleID];
+        end
     end
 end
-
-res = CalibParams;
+if numel(CalibParams)>0
+    res = CalibParams;
+else
+    res = NaN;
+end
 
 end
