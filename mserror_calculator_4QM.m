@@ -1,5 +1,5 @@
 function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,refCenters,PlotOpt,ErrorThresh)
+                                      StepAmplitude,refCenters,PlotOpt,ErrorThresh,NParticles)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -10,7 +10,6 @@ function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
 %   FeatSize: Full optical diameter of particle (pixels).
 %   DeltaFit: Narrows analysis region around particle (pixels).
 %   StepAmplitude: Maximum Amplitude of shift.
-%   ntests: Number of shift tests.
 %   refCenters: The value used as a reference for the particle centers.
 %
 % OUTPUTS:
@@ -50,9 +49,20 @@ xGrid = 1:(2*(FeatSize-DeltaFit));
 yGrid = 1:(2*(FeatSize-DeltaFit));
 [xGrid, yGrid] = meshgrid(xGrid,yGrid);
 
+% Allocate space for CalibParams
+sizeCalibParams = 0;
+
+for ParticleID = 1:NParticles
+    if sum(Tracks(:,6)==ParticleID)~=0
+        sizeCalibParams = sizeCalibParams + 1;
+    end
+end
+
+CalibParams = zeros(sizeCalibParams+20,7);
+
 %% Find calibration parameters for every particle with tracks.
 TrackID = 0;
-
+NAccepted = 0;
 for ParticleID = 1:max(Tracks(:,6))  
     subTracks = Tracks(Tracks(:,6)==ParticleID,:);
     
@@ -92,36 +102,54 @@ for ParticleID = 1:max(Tracks(:,6))
         shiftedData(isnan(shiftedData(:))) = subData(isnan(shiftedData(:)));
         
         
-        % Start Calibration
+        % Start calibration.
         [A,B,C,D] = FQM(shiftedData);
-        cnt = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
+        Centers = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
         refShift = [dxTrialShift dyTrialShift];
     
-        % now find the shift that gives the smallest error
-    
-        [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(cnt(:,1)+p1(2))-refShift(:,1)).^2,1)),...
-                     [range(refShift(:,1))/range(cnt(:,1)),mean(refShift(:,1))]);
+        % Find the p coefficients to calibrate shift detection by 4QM.  
+        [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(Centers(:,1)+p1(2))-refShift(:,1)).^2,1)),...
+                                [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);   
+        [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(Centers(:,2)+p2(2))-refShift(:,2)).^2,1)),...
+                                [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
         errx = sqrt(fvalx);
-    
-        [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(cnt(:,2)+p2(2))-refShift(:,2)).^2,1)),...
-                     [range(refShift(:,2))/range(cnt(:,2)),mean(refShift(:,2))]);
-        erry = sqrt(fvaly);
-           
+        erry = sqrt(fvaly);   
         res1 = [p1 errx p2 erry];
     
-        if PlotOpt
-            scatter(p1(1)*(cnt(:,1)+p1(2)),refShift(:,1),'b')
-            hold on
-            scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
-            getframe;  
-        end      
-        
+        % Plot the relation between reference shift and the shift found by 4QM
+        switch PlotOpt
+            case {'simple','bandpass'}
+                whitebg([1,1,1])
+                box on
+                if (errx<ErrorThresh) && (erry<ErrorThresh)
+                    scatter(p1(1)*(Centers(:,1)+p1(2)),refShift(:,1),'b')
+                    hold on
+                    scatter(p2(1)*(Centers(:,2)+p2(2)),refShift(:,2),'g')
+                else
+                    scatter(p1(1)*(Centers(:,1)+p1(2)),refShift(:,1),[],[.5,.5,.5])
+                    hold on
+                    scatter(p2(1)*(Centers(:,2)+p2(2)),refShift(:,2),[],[.5,.5,.5])
+                end
+                xlabel('calibrated shift measured by 4QM (pixels)')
+                ylabel('reference shift (pixels)')
+                legend('x-axis','y-axis','Location','northwest')
+                legend boxoff
+                getframe;
+        end
+
+        % Reject Track if error is too large.
         if (errx<ErrorThresh) && (erry<ErrorThresh)
-            CalibParams(ParticleID,:) = [res1 ParticleID];
+            NAccepted = NAccepted + 1;
+            CalibParams(NAccepted,:) = [res1 ParticleID];
         end
     end
 end
+
+% Check if any Tracks were accepted and remove redundant rows in CalibParams.
 if numel(CalibParams)>0
+    if NAccepted < size(CalibParams,1)
+        CalibParams(NAccepted+1:end,:) = [];
+    end
     res = CalibParams;
 else
     res = NaN;
