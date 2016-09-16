@@ -115,7 +115,6 @@ for ParticleID = 1:max(Tracks(:,6))
             scatter(p2(1)*(cnt(:,2)+p2(2)),refShift(:,2),'g')
             getframe;  
         end      
-        close
         
         if (errx<ErrorThresh) && (erry<ErrorThresh)
             CalibParams(ParticleID,:) = [res1 ParticleID];

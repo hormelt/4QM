@@ -9,7 +9,7 @@ function [correctedMSDs, MSDs] = tracker_caller_4QM(FileStub,varargin)
 %   NoiseSz: [optional] (pixels).
 %   FeatSize: [optional] Full optical diameter of particle (pixels).
 %   DeltaFit: [optional] Narrows analysis region around particle (pixels).
-%   TreshFact: [optional] maximum intensity devided by the thresfact gives
+%   ThreshFact: [optional] maximum intensity devided by the thresfact gives
 %   the threshold value.
 %   TrackMem: [optional] Number of steps disconnected tracks can be
 %   reconnected, in case a particle is lost.
@@ -19,7 +19,8 @@ function [correctedMSDs, MSDs] = tracker_caller_4QM(FileStub,varargin)
 %   PrintTrackProgress: [optional] Turns on or off printing progress to screen.
 %   MaxDisp: [optional] MaxDisp should be set to a value somewhat less than
 %   the mean spacing between the particles.
-%   PlotOpt: Options for plotting data {'simple','bandpassed','none'}
+%   FrmStart: [optional] Frame to start data analysis from.
+%   PlotOpt: [optional ]Options for plotting data {'simple','bandpassed','none'}
 %
 % NOTES:
 %   The imwrite() function is unstable when windows file explorer is opened.
@@ -100,7 +101,7 @@ StepAmplitude = 1;
 
 % Set parameter for MSD calculation
 CollectiveMotionFlag = 0; % 1 = subtract collective motion;
-% 0 = leave collective motion HARDCODED OPTION
+                          % 0 = leave collective motion HARDCODED OPTION
 
 %% Particle Tracking
 
@@ -114,7 +115,7 @@ disp([char(10) 'Loading and bandpassing frames... '])
 for Frame = p.FrameStart:p.NFrames
     Data(:,:,Frame-p.FrameStart+1) = double(imread([FileStub '.tif'],Frame));
     bpData(:,:,Frame-p.FrameStart+1) = bpass2D_TA(Data(:,:,Frame-p.FrameStart+1), ...
-        p.NoiseSz,p.FeatSize);
+                                                  p.NoiseSz,p.FeatSize);
 end
 
 % Do traditional tracking to determine averaged particle centers
@@ -158,41 +159,23 @@ end
 
 % Compute noise and estimate centroiding error
 disp([char(9) 'Find single particle calibration parameters.'])
-calibration_params = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
-    p.DeltaFit,StepAmplitude, ...
-    refCenters,p.PlotOpt,p.ErrorThresh);
-
+CalibParams = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
+                                            p.DeltaFit,StepAmplitude, ...
+                                            refCenters,p.PlotOpt, ...
+                                            p.ErrorThresh); 
 if isnan(calibration_params)
     ME = MException('CalibrationError:NoGoodTracks',...
         'No tracks below error threshhold.');
     throw(ME)
 end
-
-
-rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
-
-%% Now use single particle calibrations with 4QM to process real data
+                                        
+rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
+    
+%% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
-QMTracks = zeros(0,4);
-
-for ParticleID = 1:NParticles
-    Frames = Tracks(Tracks(:,6)==ParticleID,5);
-    xCoarse = refCenters(ParticleID,1);
-    yCoarse = refCenters(ParticleID,2);
-    Cols = SetAxisSubdata(xCoarse,p.FeatSize,p.DeltaFit);
-    Rows = SetAxisSubdata(yCoarse,p.FeatSize,p.DeltaFit);
-    subData = bpData(Rows,Cols,Frames);
-    p_coef = calibration_params(ParticleID,:);
-    [A,B,C,D] = FQM(subData);
-    res2 = [p_coef(1)*(A+C-B-D)./(A+B+C+D)+p_coef(2) p_coef(4)*(A+B-C-D)./(A+B+C+D)+p_coef(5) [1:size(subData,3)]'];
-    
-    %FQM(subData,[],[],0,calibration_params(ParticleID,:),1)
-    QMTracks = [QMTracks; [xCoarse*ones(numel(Frames),1), ...
-        yCoarse*ones(numel(Frames),1), zeros(numel(Frames),1)] ...
-        + res2 ParticleID*ones(numel(Frames),1)];
-    
-end
+QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
+                             NParticles,p.FeatSize,p.DeltaFit);
 
 % Calculate MSDs and errors
 disp([char(9) 'Calculating MSDs.'])
