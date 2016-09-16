@@ -156,40 +156,17 @@ end
     
 % Compute noise and estimate centroiding error
 disp([char(9) 'Find single particle calibration parameters.'])
-calibration_params = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
+CalibParams = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
                                             p.DeltaFit,StepAmplitude, ...
                                             refCenters,p.PlotOpt); 
-rmserror = sqrt((calibration_params(:,3) + calibration_params(:,6)));
+rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
 mean(rmserror);
     
 %% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
-QMTracks = zeros(size(Tracks,1),4);
-j = 1;
-for ParticleID = 1:NParticles 
-    % Construct subdata
-    TrackFrames = Tracks(Tracks(:,6)==ParticleID,5);
-    NTrackFrames = numel(TrackFrames)
-    xCoarse = refCenters(ParticleID,1);
-    yCoarse = refCenters(ParticleID,2);      
-    Cols = SetAxisSubdata(xCoarse,p.FeatSize,p.DeltaFit);
-    Rows = SetAxisSubdata(yCoarse,p.FeatSize,p.DeltaFit);      
-    subData = bpData(Rows,Cols,TrackFrames);
-    
-    % Find the corrections for the pretrack data
-    pCoef = calibration_params(ParticleID,:);
-    [A,B,C,D] = FQM(subData);
-    TrackCorrection = [pCoef(1)*(A+C-B-D)./(A+B+C+D)+pCoef(2) ...
-                       pCoef(4)*(A+B-C-D)./(A+B+C+D)+pCoef(5) ...
-                       [1:size(subData,3)]'];
-    preTrack = [xCoarse*ones(NTrackFrames,1), ...
-                  yCoarse*ones(NTrackFrames,1), ...
-                  zeros(NTrackFrames,1)];
-    correctedTrack = preTrack + TrackCorrection;
-    QMTracks(j:j+NTrackFrames-1,:) = [correctedTrack ParticleID*ones(numel(TrackFrames),1)];
-    j = j + NTrackFrames;
-end
+QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
+                             NParticles,p.FeatSize,p.DeltaFit);
     
 % Calculate MSDs and errors
 disp([char(9) 'Calculating MSDs.'])
