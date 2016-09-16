@@ -28,7 +28,7 @@ function [] = PlotRawData(data,tracks,FeatSize,NmPerPixel,FileStub)
 % frame to a movie file every 10 frames.
 
 fig1 = figure;
-whitebg(fig1);
+whitebg(fig1,[1,1,1]);
 
 for frame = 1:size(data,3)
     tempx = tracks(tracks(:,5)==frame,1);
@@ -58,7 +58,7 @@ function [] = PlotBandpassedData(data,b,tracks,FeatSize,NmPerPixel,FileStub)
 % The function puts out a frame to a movie file every 10 frames.
 
 fig1 = figure;
-whitebg(fig1);
+whitebg(fig1,[1,1,1]);
 for frame = 1:size(data,3)   
     tempx = tracks(tracks(:,5)==frame,1);
     tempy = tracks(tracks(:,5)==frame,2);

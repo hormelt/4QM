@@ -162,7 +162,8 @@ disp([char(9) 'Find single particle calibration parameters.'])
 CalibParams = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
                                             p.DeltaFit,StepAmplitude, ...
                                             refCenters,p.PlotOpt, ...
-                                            p.ErrorThresh); 
+                                            p.ErrorThresh, NParticles); 
+                                        
 if isnan(CalibParams)
     ME = MException('CalibrationError:NoGoodTracks',...
         'No tracks below error threshhold.');
@@ -190,10 +191,17 @@ correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel
 %% output
 
 % Showing MSD graph
-if ~strcmp(p.PlotOpt,'none')
-    loglog((0:size(MSDs,1)-1),MSDs(:,1)-2*mean(rmserror)^2,'.') % These are the blue shapes
-    hold on
-    getframe;
+switch p.PlotOpt
+    case {'simple','bandpass'}
+        fig3 = figure();
+        whitebg(fig3,[1,1,1])
+        loglog(0:size(MSDs,1)-1,MSDs(:,1)-2*mean(rmserror)^2,'.')
+        hold on
+        ylim([0.001,100])
+        title('Averaged MSD');
+        xlabel('\tau (s)');
+        ylabel('corrected \langledR^{2}\rangle (m^{2})');
+        savefig([FileStub '_correctedmsd'])
 end
 
 % Writing files.

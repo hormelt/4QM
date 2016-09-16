@@ -16,9 +16,13 @@ function QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 % OUTPUT:
 %   QMTracks: The Tracks corrected using the 4QM method.
 
+
 QMTracks = zeros(size(Tracks,1),4);
 j = 1;
-for ParticleID = 1:NParticles 
+
+for i = 1:size(CalibParams,1)
+    ParticleID = CalibParams(i,7);
+    
     % Construct subdata
     TrackFrames = Tracks(Tracks(:,6)==ParticleID,5);
     NTrackFrames = numel(TrackFrames);
@@ -28,8 +32,8 @@ for ParticleID = 1:NParticles
     Rows = SetAxisSubdata(yCoarse,FeatSize,DeltaFit);      
     subData = bpData(Rows,Cols,TrackFrames);
     
-    % Find the corrections for the pretrack data
-    pCoef = CalibParams(ParticleID,:);
+    % Calculate the true centers of the particles.
+    pCoef = CalibParams(i,:);
     [A,B,C,D] = FQM(subData);
     TrackCorrection = [pCoef(1)*(A+C-B-D)./(A+B+C+D)+pCoef(2) ...
                        pCoef(4)*(A+B-C-D)./(A+B+C+D)+pCoef(5) ...
