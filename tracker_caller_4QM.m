@@ -19,6 +19,7 @@ function [correctedMSDs, MSDs] = tracker_caller_4QM(FileStub,varargin)
 %   PrintTrackProgress: [optional] Turns on or off printing progress to screen.
 %   MaxDisp: [optional] MaxDisp should be set to a value somewhat less than
 %   the mean spacing between the particles.
+%   NTests: [optional] Number of trial shifts per particle.
 %   FrmStart: [optional] Frame to start data analysis from.
 %   PlotOpt: [optional ]Options for plotting data {'simple','bandpassed','none'}
 %
@@ -56,6 +57,7 @@ defMaxDisp = defFeatSize/2;
 defp.FrameStart = 1;
 defPlotOpt = 'none';
 defErrorThresh = 0.1;
+defNTests = 100;
 validPlotOpt = {'bandpass','simple','none'};
 checkPlotOpt = @(x) any(validatestring(x,validPlotOpt));
 
@@ -79,6 +81,7 @@ addOptional(f,'MaxDisp',defMaxDisp,@isnumeric)
 addOptional(f,'FrameStart',defp.FrameStart,@isnumeric)
 addOptional(f,'PlotOpt',defPlotOpt,checkPlotOpt)
 addOptional(f,'ErrorThresh',defErrorThresh,@isnumeric)
+addOptional(f,'NTests',defNTests,@isnumeric)
 
 % Parse the values from f and put results in p.
 parse(f,FileStub,varargin{:})
@@ -162,7 +165,8 @@ disp([char(9) 'Find single particle calibration parameters.'])
 CalibParams = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
                                             p.DeltaFit,StepAmplitude, ...
                                             refCenters,p.PlotOpt, ...
-                                            p.ErrorThresh, NParticles); 
+                                            p.ErrorThresh, NParticles, ...
+                                            p.NTests); 
                                         
 if isnan(CalibParams)
     ME = MException('CalibrationError:NoGoodTracks',...
@@ -182,6 +186,7 @@ QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMTracks,p.NmPerPixel,CollectiveMotionFlag);
 disp([char(10) 'Error correction of MSDs ... '])
+
 correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel^2;
 
 % corrected_AVEmsds = [mean(correctedMSDs(2:end,:),1)' std(correctedMSDs(2:end,:),[],1)']

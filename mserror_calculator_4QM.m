@@ -1,5 +1,6 @@
 function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,refCenters,PlotOpt,ErrorThresh,NParticles)
+                                      StepAmplitude,refCenters,PlotOpt, ...
+                                      ErrorThresh,NParticles,NTests)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -49,7 +50,7 @@ xGrid = 1:(2*(FeatSize-DeltaFit));
 yGrid = 1:(2*(FeatSize-DeltaFit));
 [xGrid, yGrid] = meshgrid(xGrid,yGrid);
 
-% Allocate space for CalibParams
+% Allocate space for CalibParams and Centers
 sizeCalibParams = 0;
 
 for ParticleID = 1:NParticles
@@ -58,7 +59,8 @@ for ParticleID = 1:NParticles
     end
 end
 
-CalibParams = zeros(sizeCalibParams+20,7);
+CalibParams = zeros(sizeCalibParams,7);
+trialCenters = zeros(NTests*NParticles,3);
 
 %% Find calibration parameters for every particle with tracks.
 TrackID = 0;
@@ -68,7 +70,6 @@ for ParticleID = 1:max(Tracks(:,6))
     
     if ~isempty(subTracks)
         TrackID = TrackID + 1;
-        NFrames = numel(subTracks(:,5));
         
         % Determine the subData frame around the particle of interest.
         xCoarse = refCenters(TrackID,1);
@@ -84,23 +85,22 @@ for ParticleID = 1:max(Tracks(:,6))
         refsubData = subData(:,:,refStep);
 
         % Determine the trial shifts of the refFrame for 4QM calibration.
-        dxTrialShift = StepAmplitude*(randn(NFrames,1));
-        dyTrialShift = StepAmplitude*(randn(NFrames,1));
+        dxTrialShift = StepAmplitude*(randn(NTests,1));
+        dyTrialShift = StepAmplitude*(randn(NTests,1));
         
         % Create the trial data by shifting refsubData by TrialShift.
-        shiftedData = zeros([size(xGrid),NFrames]);
+        shiftedData = zeros([size(xGrid),NTests]);
         
-        for j = 1:NFrames
+        for j = 1:NTests
             shiftedxGrid = xGrid + dxTrialShift(j);
             shiftedyGrid = yGrid + dyTrialShift(j);
             shiftedData(:,:,j) = interp2(xGrid,yGrid,refsubData, ...
                                          shiftedxGrid,shiftedyGrid);
         end
         
-        
         % Replace NaN resulting from interp2 by data from the subrefFrame
-        shiftedData(isnan(shiftedData(:))) = subData(isnan(shiftedData(:)));
-        
+        temp = repmat(refsubData,[1,1,NTests]);
+        shiftedData(isnan(shiftedData(:))) = temp(isnan(shiftedData(:)));
         
         % Start calibration.
         [A,B,C,D] = FQM(shiftedData);
@@ -148,7 +148,7 @@ end
 % Check if any Tracks were accepted and remove redundant rows in CalibParams.
 if numel(CalibParams)>0
     if NAccepted < size(CalibParams,1)
-        CalibParams(NAccepted+1:end,:) = [];
+        CalibParams(NAccepted+1:end,:) = []; 
     end
     res = CalibParams;
 else
