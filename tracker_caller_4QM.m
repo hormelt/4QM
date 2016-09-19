@@ -168,11 +168,6 @@ disp([char(9) 'Find single particle calibration parameters.'])
                                                     refCenters,p.PlotOpt, ...
                                                     p.ErrorThresh, NParticles, ...
                                                     p.NTests); 
-if isnan(CalibParams)
-    ME = MException('CalibrationError:NoGoodTracks',...
-        'No tracks below error threshhold.');
-    throw(ME)
-end
                                         
 rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
     
@@ -180,11 +175,17 @@ rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
 QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
-                             NParticles,p.FeatSize,p.DeltaFit);
-                         
-% Calculate MSDs and errors
+                             p.FeatSize,p.DeltaFit);
+
+% For now we will just use the good tracks, can thing about if we want to
+% do something different later.
+QMGood = QMTracks(QMTracks(:,5)==1,:);
+QMGood = QMGood(:,1:4); %resize for use with calcMSD
+
+                         % Calculate MSDs and errors
+
 disp([char(9) 'Calculating MSDs.'])
-MSDs = calcMSD(QMTracks,p.NmPerPixel,CollectiveMotionFlag);
+MSDs = calcMSD(QMGood,p.NmPerPixel,CollectiveMotionFlag);
 disp([char(10) 'Error correction of MSDs ... '])
 
 correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel^2;

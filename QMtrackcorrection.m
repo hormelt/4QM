@@ -1,5 +1,5 @@
 function QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
-                                      NParticles,FeatSize,DeltaFit)
+                                      FeatSize,DeltaFit)
 
 % Provides corrections for a pretrack based on the 4QM method.
 %
@@ -17,9 +17,8 @@ function QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 %   QMTracks: The Tracks corrected using the 4QM method.
 
 
-QMTracks = zeros(size(Tracks,1),4);
-j = 1;
-
+QMTracks = zeros(size(Tracks,1),5);
+QMTrackRow = 1; % for indexing
 for i = 1:size(CalibParams,1)
     ParticleID = CalibParams(i,7);
     
@@ -42,6 +41,10 @@ for i = 1:size(CalibParams,1)
                 yCoarse*ones(NTrackFrames,1), ...
                 zeros(NTrackFrames,1)];
     correctedTrack = preTrack + TrackCorrection;
-    QMTracks(j:j+NTrackFrames-1,:) = [correctedTrack ParticleID*ones(numel(TrackFrames),1)];
-    j = j + NTrackFrames;
+    QMTracks(QMTrackRow:QMTrackRow+NTrackFrames-1,:) = [correctedTrack ParticleID*ones(numel(TrackFrames),1),...
+        CalibParams(i,8)*ones(numel(TrackFrames),1)];
+    QMTrackRow = QMTrackRow+NTrackFrames;
 end
+
+
+
