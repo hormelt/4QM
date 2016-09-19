@@ -153,6 +153,7 @@ end
 
 % Compute averaged centers to use as reference points for rest of analysis
 disp([char(9) 'Find reference points from pretracking data.'])
+refCenters = zeros(size(unique(Tracks(:,6)),1),3);
 
 for ParticleID = 1:max(Tracks(:,6))
     if sum(Tracks(:,6)==ParticleID)~=0
