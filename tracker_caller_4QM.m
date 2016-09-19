@@ -1,7 +1,7 @@
 function [correctedMSDs, MSDs, trialCenters] = tracker_caller_4QM(FileStub,varargin)
 
 % Segmentation and Tracking of Particles via the 4QM method in 2D.
-%coorre
+%
 % INPUTS:
 %   FileStub: Path to the image_stack to be analyzed.
 %   NmPerPixel: [optional] Actual pixel width (nm).
