@@ -60,7 +60,7 @@ for ParticleID = 1:NParticles
 end
 
 CalibParams = zeros(sizeCalibParams,7);
-trialCenters = zeros(NTests*NParticles,3);
+trialCenters = zeros(NTests*NParticles,5);
 
 %% Find calibration parameters for every particle with tracks.
 TrackID = 0;
@@ -121,7 +121,8 @@ for ParticleID = 1:max(Tracks(:,6))
             NAccepted = NAccepted + 1;
             CalibParams(NAccepted,:) = [res1 ParticleID];
             trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,1:2) = Centers;
-            trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,3) = repmat(ParticleID,[1,NTests]);
+            trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,3:4) = refShift;
+            trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,5) = repmat(ParticleID,[1,NTests]);
         end
     end
 end
@@ -139,22 +140,26 @@ end
 % Plot the relation between reference shift and the shift found by 4QM
 switch PlotOpt
     case {'simple','bandpass'}
-       whitebg([1,1,1])
-       box on
-       if (errx<ErrorThresh) && (erry<ErrorThresh)
-           scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),'b')
-           hold on
-           scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),'g')
-       else
-           scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),[],[.5,.5,.5])
-           hold on
-           scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),[],[.5,.5,.5]) 
-       end
-           xlabel('calibrated shift measured by 4QM (pixels)')
-           ylabel('reference shift (pixels)')
-           legend('x-axis','y-axis','Location','northwest')
-           legend boxoff
-           getframe;
+        calibratedShift = zeros(size(trialCenters,1),2);
+        TrackIDlist = unique(trialCenters(:,5));
+        for i = 1:size(TrackIDlist,1)
+            TrackID = TrackIDlist(i);
+            calibratedShift((TrackID-1)*NTests+1:(TrackID)*NTests,1) = ...
+                CalibParams(TrackID,1)*(trialCenters(trialCenters(:,5)==TrackID,1)+CalibParams(TrackID,2));
+            calibratedShift((TrackID-1)*NTests+1:(TrackID)*NTests,2) = ...
+                CalibParams(TrackID,4)*(trialCenters(trialCenters(:,5)==TrackID,2)+CalibParams(TrackID,5));
         end
-
+        whitebg([1,1,1])
+        ax1 = subplot(2,1,1);
+        scatter(calibratedShift(:,1),trialCenters(:,3),'k')
+        box(ax1,'on')
+        ax2 = subplot(2,1,2);
+        scatter(calibratedShift(:,2),trialCenters(:,4),'k')
+        box(ax2,'on')
+        xlabel(ax1,'\Deltax_{4QM} (pixels)')
+        xlabel(ax2,'\Deltay_{4QM} (pixels)')
+        ylabel(ax1,'\Deltax_{ref} (pixels)')
+        ylabel(ax2,'\Deltay_{ref} (pixels)')
+        getframe;
+end
 end

@@ -180,7 +180,7 @@ disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
 QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
                              NParticles,p.FeatSize,p.DeltaFit);
-whos QMTracks
+                         
 % Calculate MSDs and errors
 disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMTracks,p.NmPerPixel,CollectiveMotionFlag);
@@ -199,9 +199,9 @@ switch p.PlotOpt
     case {'simple','bandpass'}
         fig3 = figure();
         whitebg(fig3,[1,1,1])
-        loglog(0:size(MSDs,1)-1,MSDs(:,1)-2*mean(rmserror)^2,'.')
+        loglog(0:size(MSDs,1)-1,MSDs(:,1)-2*mean(rmserror)^2,'.','color','k')
         hold on
-        ylim([0.001,100])
+        ylim([0.1,100])
         title('Averaged MSD');
         xlabel('\tau (s)');
         ylabel('corrected \langledR^{2}\rangle (m^{2})');
