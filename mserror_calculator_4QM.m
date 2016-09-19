@@ -1,6 +1,6 @@
-function res = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
-                                      StepAmplitude,refCenters,PlotOpt, ...
-                                      ErrorThresh,NParticles,NTests)
+function [res,trialCenters] = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaFit, ...
+                                                     StepAmplitude,refCenters,PlotOpt, ...
+                                                     ErrorThresh,NParticles,NTests)
 
 % Calculates the mean squared error in the particle position upon subpixel
 % displacements.
@@ -116,31 +116,12 @@ for ParticleID = 1:max(Tracks(:,6))
         erry = sqrt(fvaly);   
         res1 = [p1 errx p2 erry];
     
-        % Plot the relation between reference shift and the shift found by 4QM
-        switch PlotOpt
-            case {'simple','bandpass'}
-                whitebg([1,1,1])
-                box on
-                if (errx<ErrorThresh) && (erry<ErrorThresh)
-                    scatter(p1(1)*(Centers(:,1)+p1(2)),refShift(:,1),'b')
-                    hold on
-                    scatter(p2(1)*(Centers(:,2)+p2(2)),refShift(:,2),'g')
-                else
-                    scatter(p1(1)*(Centers(:,1)+p1(2)),refShift(:,1),[],[.5,.5,.5])
-                    hold on
-                    scatter(p2(1)*(Centers(:,2)+p2(2)),refShift(:,2),[],[.5,.5,.5])
-                end
-                xlabel('calibrated shift measured by 4QM (pixels)')
-                ylabel('reference shift (pixels)')
-                legend('x-axis','y-axis','Location','northwest')
-                legend boxoff
-                getframe;
-        end
-
         % Reject Track if error is too large.
         if (errx<ErrorThresh) && (erry<ErrorThresh)
             NAccepted = NAccepted + 1;
             CalibParams(NAccepted,:) = [res1 ParticleID];
+            trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,1:2) = Centers;
+            trialCenters((TrackID-1)*NTests+1:(TrackID)*NTests,3) = repmat(ParticleID,[1,NTests]);
         end
     end
 end
@@ -154,5 +135,26 @@ if numel(CalibParams)>0
 else
     res = NaN;
 end
+
+% Plot the relation between reference shift and the shift found by 4QM
+switch PlotOpt
+    case {'simple','bandpass'}
+       whitebg([1,1,1])
+       box on
+       if (errx<ErrorThresh) && (erry<ErrorThresh)
+           scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),'b')
+           hold on
+           scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),'g')
+       else
+           scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),[],[.5,.5,.5])
+           hold on
+           scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),[],[.5,.5,.5]) 
+       end
+           xlabel('calibrated shift measured by 4QM (pixels)')
+           ylabel('reference shift (pixels)')
+           legend('x-axis','y-axis','Location','northwest')
+           legend boxoff
+           getframe;
+        end
 
 end

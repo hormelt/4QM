@@ -1,7 +1,7 @@
-function [correctedMSDs, MSDs] = tracker_caller_4QM(FileStub,varargin)
+function [correctedMSDs, MSDs, trialCenters] = tracker_caller_4QM(FileStub,varargin)
 
 % Segmentation and Tracking of Particles via the 4QM method in 2D.
-%
+%coorre
 % INPUTS:
 %   FileStub: Path to the image_stack to be analyzed.
 %   NmPerPixel: [optional] Actual pixel width (nm).
@@ -162,12 +162,11 @@ end
 
 % Compute noise and estimate centroiding error
 disp([char(9) 'Find single particle calibration parameters.'])
-CalibParams = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
-                                            p.DeltaFit,StepAmplitude, ...
-                                            refCenters,p.PlotOpt, ...
-                                            p.ErrorThresh, NParticles, ...
-                                            p.NTests); 
-                                        
+[CalibParams,trialCenters] = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
+                                                    p.DeltaFit,StepAmplitude, ...
+                                                    refCenters,p.PlotOpt, ...
+                                                    p.ErrorThresh, NParticles, ...
+                                                    p.NTests); 
 if isnan(CalibParams)
     ME = MException('CalibrationError:NoGoodTracks',...
         'No tracks below error threshhold.');
@@ -181,7 +180,7 @@ disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
 QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
                              NParticles,p.FeatSize,p.DeltaFit);
-
+whos QMTracks
 % Calculate MSDs and errors
 disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMTracks,p.NmPerPixel,CollectiveMotionFlag);
