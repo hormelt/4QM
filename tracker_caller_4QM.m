@@ -200,7 +200,7 @@ switch p.PlotOpt
         whitebg(fig3,[1,1,1])
         loglog(0:size(MSDs,1)-1,correctedMSDs(:,1),'.','color','k')
         hold on
-        ylim([1,max(correctedMSDs(:,1))*10])
+        ylim([min(correctedMSDs(2:end,1))*0.1,max(correctedMSDs(:,1))*10])
         title('Averaged MSD');
         xlabel('\tau (s)');
         ylabel('corrected \langledR^{2}\rangle (nm^{2})');
