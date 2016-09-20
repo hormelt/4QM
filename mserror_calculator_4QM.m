@@ -149,11 +149,23 @@ switch PlotOpt
         end
         whitebg([1,1,1])
         ax1 = subplot(2,1,1);
-        scatter(calibratedShift(:,1),trialCenters(:,3),'k')
+        scatter(calibratedShift(trialCenters(:,6)==0,1), ...
+                trialCenters(trialCenters(:,6)==0,3),[],[0.7,0.7,0.7])
+        hold on
+        scatter(calibratedShift(trialCenters(:,6)==1,1), ...
+                trialCenters(trialCenters(:,6)==1,3),'k')
         box(ax1,'on')
+        legend('rejected','accepted','Location','northwest')
+        legend('boxoff')
         ax2 = subplot(2,1,2);
-        scatter(calibratedShift(:,2),trialCenters(:,4),'k')
+        scatter(calibratedShift(trialCenters(:,6)==0,2), ...
+                trialCenters(trialCenters(:,6)==0,4),[],[0.7,0.7,0.7])
+        hold on
+        scatter(calibratedShift(trialCenters(:,6)==1,2), ...
+                trialCenters(trialCenters(:,6)==1,4),'k')
         box(ax2,'on')
+        legend('rejected','accepted','Location','northwest')
+        legend('boxoff')
         xlabel(ax1,'\Deltax_{4QM} (pixels)')
         xlabel(ax2,'\Deltay_{4QM} (pixels)')
         ylabel(ax1,'\Deltax_{ref} (pixels)')
