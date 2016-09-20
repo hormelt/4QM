@@ -170,7 +170,7 @@ disp([char(9) 'Find single particle calibration parameters.'])
                                                     p.NTests); 
                                         
 rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
-    
+
 %% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
@@ -203,10 +203,10 @@ switch p.PlotOpt
         whitebg(fig3,[1,1,1])
         loglog(0:size(MSDs,1)-1,MSDs(:,1)-2*mean(rmserror)^2,'.','color','k')
         hold on
-        ylim([0.1,100])
+        ylim([1,max(MSDs(:,1))*10])
         title('Averaged MSD');
         xlabel('\tau (s)');
-        ylabel('corrected \langledR^{2}\rangle (m^{2})');
+        ylabel('corrected \langledR^{2}\rangle (nm^{2})');
         savefig([FileStub '_correctedmsd'])
 end
 

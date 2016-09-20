@@ -155,8 +155,10 @@ switch PlotOpt
         scatter(calibratedShift(trialCenters(:,6)==1,1), ...
                 trialCenters(trialCenters(:,6)==1,3),'k')
         box(ax1,'on')
-        legend('rejected','accepted','Location','northwest')
-        legend('boxoff')
+        if sum(trialCenters(:,6)) < size(trialCenters,1)
+            legend('rejected','accepted','Location','northwest')
+            legend('boxoff')
+        end
         ax2 = subplot(2,1,2);
         scatter(calibratedShift(trialCenters(:,6)==0,2), ...
                 trialCenters(trialCenters(:,6)==0,4),[],[0.7,0.7,0.7])
@@ -164,8 +166,10 @@ switch PlotOpt
         scatter(calibratedShift(trialCenters(:,6)==1,2), ...
                 trialCenters(trialCenters(:,6)==1,4),'k')
         box(ax2,'on')
-        legend('rejected','accepted','Location','northwest')
-        legend('boxoff')
+        if sum(trialCenters(:,6)) < size(trialCenters,1)
+            legend('rejected','accepted','Location','northwest')
+            legend('boxoff')
+        end
         xlabel(ax1,'\Deltax_{4QM} (pixels)')
         xlabel(ax2,'\Deltay_{4QM} (pixels)')
         ylabel(ax1,'\Deltax_{ref} (pixels)')
