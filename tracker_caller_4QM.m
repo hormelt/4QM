@@ -58,6 +58,7 @@ defp.FrameStart = 1;
 defPlotOpt = 'none';
 defErrorThresh = 0.1;
 defNTests = 100;
+defStepAmplitude = 1;
 validPlotOpt = {'bandpass','simple','none'};
 checkPlotOpt = @(x) any(validatestring(x,validPlotOpt));
 
@@ -82,7 +83,7 @@ addOptional(f,'FrameStart',defp.FrameStart,@isnumeric)
 addOptional(f,'PlotOpt',defPlotOpt,checkPlotOpt)
 addOptional(f,'ErrorThresh',defErrorThresh,@isnumeric)
 addOptional(f,'NTests',defNTests,@isnumeric)
-
+addOptional(f,'StepAmplitude',defStepAmplitude,@isnumeric)
 % Parse the values from f and put results in p.
 parse(f,FileStub,varargin{:})
 p = f.Results;
@@ -98,9 +99,6 @@ param.mem = p.TrackMem;
 param.dim = p.Dim;
 param.good = p.MinTrackLength;
 param.quiet = p.PrintTrackProgress;
-
-% Set parameters for error calculation.
-StepAmplitude = 1;
 
 % Set parameter for MSD calculation
 CollectiveMotionFlag = 0; % 1 = subtract collective motion;
@@ -164,7 +162,7 @@ end
 % Compute noise and estimate centroiding error
 disp([char(9) 'Find single particle calibration parameters.'])
 [CalibParams,trialCenters] = mserror_calculator_4QM(bpData,Tracks,p.FeatSize, ...
-                                                    p.DeltaFit,StepAmplitude, ...
+                                                    p.DeltaFit,p.StepAmplitude, ...
                                                     refCenters,p.PlotOpt, ...
                                                     p.ErrorThresh, NParticles, ...
                                                     p.NTests); 
@@ -182,18 +180,17 @@ QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 QMGood = QMTracks(QMTracks(:,5)==1,:);
 QMGood = QMGood(:,1:4); %resize for use with calcMSD
 
-                         % Calculate MSDs and errors
+% Calculate MSDs and errors
 
 disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMGood,p.NmPerPixel,CollectiveMotionFlag);
 disp([char(10) 'Error correction of MSDs ... '])
 
 correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel^2;
-
-% corrected_AVEmsds = [mean(correctedMSDs(2:end,:),1)' std(correctedMSDs(2:end,:),[],1)']
-% final_AVEmsds = nanmean(corrected_AVEmsds,1);
-% final_AVEmsds(:,2) = final_AVEmsds(:,2)/sqrt(size(corrected_AVEmsds,1));
-
+averagecorrectedMSDs = nansum(correctedMSDs,2)./size(correctedMSDs,2);
+stdcorrectedMSDs = std(correctedMSDs,[],2);
+correctedMSDs = [averagecorrectedMSDs stdcorrectedMSDs correctedMSDs];
+correctedMSDs(1,:) = zeros(1,size(correctedMSDs,2));
 %% output
 
 % Showing MSD graph
@@ -201,9 +198,9 @@ switch p.PlotOpt
     case {'simple','bandpass'}
         fig3 = figure();
         whitebg(fig3,[1,1,1])
-        loglog(0:size(MSDs,1)-1,MSDs(:,1)-2*mean(rmserror)^2,'.','color','k')
+        loglog(0:size(MSDs,1)-1,correctedMSDs(:,1),'.','color','k')
         hold on
-        ylim([1,max(MSDs(:,1))*10])
+        ylim([1,max(correctedMSDs(:,1))*10])
         title('Averaged MSD');
         xlabel('\tau (s)');
         ylabel('corrected \langledR^{2}\rangle (nm^{2})');
@@ -216,6 +213,10 @@ disp([char(9) 'Writing MSD file.'])
 csvwrite([FileStub '_msd.csv'],MSDs);
 disp([char(9) 'Write rms error file.'])
 csvwrite([FileStub '_rmserror.csv'],rmserror);
+disp([char(9) 'Writing data as .mat file.'])
+save([FileStub '4QMData'],'Tracks','QMTracks','MSDs','correctedMSDs')
+disp([char(9) 'Writing input as .mat file.'])
+save([FileStub '4QMInput'],'p')
 
 disp(char(9)); toc
 end

@@ -129,12 +129,11 @@ for ParticleID = 1:max(Tracks(:,6))
 end
 
 % Check if any Tracks were accepted and remove redundant rows in CalibParams.
-if sum(CalibParams(:,8))>0
+if sum(CalibParams(:,8)) == 0
     disp('Warning: No tracks below error threshhold!')
 end
 
 res = CalibParams;
-
 % Plot the relation between reference shift and the shift found by 4QM
 switch PlotOpt
     case {'simple','bandpass'}
