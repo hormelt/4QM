@@ -107,15 +107,16 @@ CollectiveMotionFlag = 0; % 1 = subtract collective motion;
 %% Particle Tracking
 
 % Set up arrays
-Data = zeros(FrameHeight,FrameWidth,NFrames);
-bpData = Data;
+Data = zeros(FrameHeight,FrameWidth,NFrames-p.FrameStart+1,'int8');
+bpData = zeros(FrameHeight,FrameWidth,NFrames-p.FrameStart+1,'double');
 
 % Read in data + bandpasfilter
 disp([char(10) 'Loading and bandpassing frames... '])
 
 for Frame = p.FrameStart:p.NFrames
-    Data(:,:,Frame-p.FrameStart+1) = double(imread([FileStub '.tif'],Frame));
-    bpData(:,:,Frame-p.FrameStart+1) = bpass2D_TA(Data(:,:,Frame-p.FrameStart+1), ...
+    Data(:,:,Frame-p.FrameStart+1) = imread([FileStub '.tif'],Frame);
+    whos imread([FileStub '.tif'],Frame)
+    bpData(:,:,Frame-p.FrameStart+1) = bpass2D_TA(double(Data(:,:,Frame-p.FrameStart+1)), ...
                                                   p.NoiseSz,p.FeatSize);
 end
 
@@ -148,6 +149,8 @@ switch p.PlotOpt
     otherwise
         disp([char(9) 'No visual check. If desired use PlotOpt.'])
 end
+
+clear Data
 
 % Compute averaged centers to use as reference points for rest of analysis
 disp([char(9) 'Find reference points from pretracking data.'])
