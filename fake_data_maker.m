@@ -15,7 +15,8 @@ function [] = fake_data_maker(NFrames,SigPtcle,stdStep,RelativeNoiseAmplitude,Ve
 % VARIABLES
 maxInt = 255;
 dt = 1;
-
+xbound = 512;
+ybound = 512;
 % FILENAMES
 stdStepStr = strrep(num2str(stdStep, '%.2f'), '.', '_');
 RelativeNoiseAmplitudeStr = strrep(num2str(RelativeNoiseAmplitude, '%.2f'), '.', '_');
@@ -28,15 +29,15 @@ mkdir(['data/' Experiment '/fov1'])
 % DATA CONSTRUCTION
 noise_amplitude = RelativeNoiseAmplitude*maxInt;
 
-x = 1:512;
-y = 1:512;
+x = 1:xbound;
+y = 1:ybound;
 
-[x y] = meshgrid(x,y);
+[x, y] = meshgrid(x,y);
 
-x0 = 51:47:512;
-y0 = 51:47:512;
+x0 = 51:47:xbound;
+y0 = 51:47:ybound;
 
-[x0 y0] = meshgrid(x0,y0);
+[x0, y0] = meshgrid(x0,y0);
 
 x0 = x0 + 15*(rand(size(x0))-0.5);
 y0 = y0 + 15*(rand(size(y0))-0.5);
@@ -51,6 +52,7 @@ for frame = 1:NFrames
     Tracks(1+(frame-1)*nptcles:(frame)*nptcles,3) = ones(1,nptcles)*frame;
     Tracks(1+(frame-1)*nptcles:(frame)*nptcles,4) = 1:nptcles;
     data = zeros(size(x));
+    
     
     for ptcle = 1:nptcles      
         data = data + exp(-((x-x1(ptcle)).^2 + (y-y1(ptcle)).^2)/(2*SigPtcle^2))*maxInt;       

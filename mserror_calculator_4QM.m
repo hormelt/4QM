@@ -30,7 +30,7 @@ function [res,trialCenters] = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaF
 %   max_noise = max(abs(subdata(subdata(:)<(max(subdata(:))/ThreshFact))-mean_noise));
 %   SNR = mean(subdata(round(size(subdata,1)/2),round(size(subdata,2)/2),:))/mean_noise; %approximate signal to noise ratio
 %   temp_noise = 2*(rand([size(shifted_data)])-0.5)*std_noise/2 + mean_noise;
-
+%
 %   mean_shifted = mean(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % mean in shifted noise
 %   std_shifted = std(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % std in shifted noise
 %   normdata = (shifted_data - mean_shifted)/std_shifted;
@@ -77,7 +77,7 @@ for ParticleID = 1:max(Tracks(:,6))
     
     % Find the frame in which the particle is closest to its refCenter.
     metricDistance = sqrt((subTracks(:,1)-refCenters(ParticleID,1)).^2 ...
-        + (subTracks(:,2)-refCenters(ParticleID,2)).^2);
+                     + (subTracks(:,2)-refCenters(ParticleID,2)).^2);
     [~, refStep] = min(metricDistance);
     refsubData = subData(:,:,refStep);
     
@@ -101,14 +101,14 @@ for ParticleID = 1:max(Tracks(:,6))
     
     % Start calibration.
     [A,B,C,D] = FQM(shiftedData);
-    Centers = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
+    Centers = [(-A-C+B+D)./(A+B+C+D) (-A-B+C+D)./(A+B+C+D)];
     refShift = [dxTrialShift dyTrialShift];
     
     % Find the p coefficients to calibrate shift detection by 4QM.
     [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(Centers(:,1)+p1(2))-refShift(:,1)).^2,1)),...
-        [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);
+                 [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);
     [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(Centers(:,2)+p2(2))-refShift(:,2)).^2,1)),...
-        [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
+                 [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
     errx = sqrt(fvalx);
     erry = sqrt(fvaly);
     res1 = [p1 errx p2 erry];
@@ -128,7 +128,7 @@ for ParticleID = 1:max(Tracks(:,6))
         
 end
 
-% Check if any Tracks were accepted and remove redundant rows in CalibParams.
+% Check if any Tracks were accepted.
 if sum(CalibParams(:,8)) == 0
     disp('Warning: No tracks below error threshhold!')
 end
