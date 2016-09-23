@@ -170,7 +170,7 @@ disp([char(9) 'Find single particle calibration parameters.'])
                                                     p.ErrorThresh, NParticles, ...
                                                     p.NTests); 
                                         
-rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
+rmserror = sqrt((CalibParams(CalibParams(:,8)==1,3) + CalibParams(CalibParams(:,8)==1,6)));
 
 %% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
