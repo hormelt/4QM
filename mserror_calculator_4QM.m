@@ -99,8 +99,8 @@ for ParticleID = 1:max(Tracks(:,6))
                                      shiftedxGrid,shiftedyGrid);
     end
     % Replace NaN resulting from interp2 by data from the subrefFrame
-    temp = repmat(refsubData,[1,1,NTests]);
-    shiftedData(isnan(shiftedData(:))) = temp(isnan(shiftedData(:)));
+    % temp = repmat(refsubData,[1,1,NTests]);
+    shiftedData(isnan(shiftedData(:))) = 0;%temp(isnan(shiftedData(:)));
    
     % Start calibration.
     [A,B,C,D] = FQM(shiftedData);
@@ -108,14 +108,17 @@ for ParticleID = 1:max(Tracks(:,6))
     refShift = [dxTrialShift dyTrialShift];
     
     % Find the p coefficients to calibrate shift detection by 4QM.
-    [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(Centers(:,1)+p1(2))-refShift(:,1)).^2,1)),...
-                 [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);
-    [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(Centers(:,2)+p2(2))-refShift(:,2)).^2,1)),...
-                 [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
+    options = optimoptions(@lsqcurvefit, 'Display','none');
+    [p1,fvalx] = lsqcurvefit(@(p1,xdata) (p1(1)*(xdata+p1(2))), ...
+                 [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))] ...
+                 ,Centers(:,1),refShift(:,1),[],[],options);  
+    [p2,fvaly] = lsqcurvefit(@(p2,xdata) (p2(1)*(xdata+p2(2))), ...
+                 [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))] ...
+                 ,Centers(:,2),refShift(:,2),[],[],options);
     errx = sqrt(fvalx);
     erry = sqrt(fvaly);
     res1 = [p1 errx p2 erry];
-    
+ 
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,1:2) = Centers;
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,3:4) = refShift;
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,5) = repmat(ParticleID,[1,NTests]);
