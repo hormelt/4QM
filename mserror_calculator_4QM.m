@@ -30,7 +30,7 @@ function [res,trialCenters] = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaF
 %   max_noise = max(abs(subdata(subdata(:)<(max(subdata(:))/ThreshFact))-mean_noise));
 %   SNR = mean(subdata(round(size(subdata,1)/2),round(size(subdata,2)/2),:))/mean_noise; %approximate signal to noise ratio
 %   temp_noise = 2*(rand([size(shifted_data)])-0.5)*std_noise/2 + mean_noise;
-
+%
 %   mean_shifted = mean(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % mean in shifted noise
 %   std_shifted = std(shifted_data(shifted_data(:)<(max(shifted_data(:))/threshfact))); % std in shifted noise
 %   normdata = (shifted_data - mean_shifted)/std_shifted;
@@ -59,8 +59,9 @@ for ParticleID = 1:NParticles
     end
 end
 
+
 CalibParams = zeros(sizeCalibParams,8);
-trialCenters = zeros(NTests*NParticles,4);
+trialCenters = zeros(NTests*NParticles,6);
 
 %% Find calibration parameters for every particle with tracks.
 
@@ -76,7 +77,7 @@ for ParticleID = 1:max(Tracks(:,6))
     
     % Find the frame in which the particle is closest to its refCenter.
     metricDistance = sqrt((subTracks(:,1)-refCenters(ParticleID,1)).^2 ...
-        + (subTracks(:,2)-refCenters(ParticleID,2)).^2);
+                     + (subTracks(:,2)-refCenters(ParticleID,2)).^2);
     [~, refStep] = min(metricDistance);
     refsubData = subData(:,:,refStep);
     
@@ -91,7 +92,7 @@ for ParticleID = 1:max(Tracks(:,6))
         shiftedxGrid = xGrid + dxTrialShift(j);
         shiftedyGrid = yGrid + dyTrialShift(j);
         shiftedData(:,:,j) = interp2(xGrid,yGrid,refsubData, ...
-            shiftedxGrid,shiftedyGrid);
+                                     shiftedxGrid,shiftedyGrid);
     end
     
     % Replace NaN resulting from interp2 by data from the subrefFrame
@@ -100,59 +101,78 @@ for ParticleID = 1:max(Tracks(:,6))
     
     % Start calibration.
     [A,B,C,D] = FQM(shiftedData);
-    Centers = [(A+C-B-D)./(A+B+C+D) (A+B-C-D)./(A+B+C+D)];
+    Centers = [(-A-C+B+D)./(A+B+C+D) (-A-B+C+D)./(A+B+C+D)];
     refShift = [dxTrialShift dyTrialShift];
     
     % Find the p coefficients to calibrate shift detection by 4QM.
     [p1,fvalx] = fminsearch(@(p1) squeeze(mean((p1(1)*(Centers(:,1)+p1(2))-refShift(:,1)).^2,1)),...
-        [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);
+                 [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))]);
     [p2,fvaly] = fminsearch(@(p2) squeeze(mean((p2(1)*(Centers(:,2)+p2(2))-refShift(:,2)).^2,1)),...
-        [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
+                 [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))]);
     errx = sqrt(fvalx);
     erry = sqrt(fvaly);
     res1 = [p1 errx p2 erry];
     
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,1:2) = Centers;
-        trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,3) = repmat(ParticleID,[1,NTests]);
+    trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,3:4) = refShift;
+    trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,5) = repmat(ParticleID,[1,NTests]);
     
     % Flag Track if statistics are good.
     if (errx<ErrorThresh) && (erry<ErrorThresh)
         CalibParams(ParticleID,:) = [res1 ParticleID 1];
-        trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,4) = ones(NTests,1);
+        trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,6) = ones(NTests,1);
     else
         CalibParams(ParticleID,:) = [res1 ParticleID 0];
-        trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,4) = zeros(NTests,1);
+        trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,6) = zeros(NTests,1);
     end
-        
         
 end
 
-% Check if any Tracks were accepted and remove redundant rows in CalibParams.
-if sum(CalibParams(:,8))>0
+% Check if any Tracks were accepted.
+if sum(CalibParams(:,8)) == 0
     disp('Warning: No tracks below error threshhold!')
 end
 
 res = CalibParams;
-
 % Plot the relation between reference shift and the shift found by 4QM
 switch PlotOpt
     case {'simple','bandpass'}
-        whitebg([1,1,1])
-        box on
-        if (errx<ErrorThresh) && (erry<ErrorThresh)
-            scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),'b')
-            hold on
-            scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),'g')
-        else
-            scatter(p1(1)*(trialCenters(:,1)+p1(2)),refShift(:,1),[],[.5,.5,.5])
-            hold on
-            scatter(p2(1)*(trialCenters(:,2)+p2(2)),refShift(:,2),[],[.5,.5,.5])
+        calibratedShift = zeros(size(trialCenters,1),2);
+        TrackIDlist = unique(trialCenters(:,5));
+        for i = 1:size(TrackIDlist,1)
+            TrackID = TrackIDlist(i);
+            calibratedShift((TrackID-1)*NTests+1:(TrackID)*NTests,1) = ...
+                CalibParams(TrackID,1)*(trialCenters(trialCenters(:,5)==TrackID,1)+CalibParams(TrackID,2));
+            calibratedShift((TrackID-1)*NTests+1:(TrackID)*NTests,2) = ...
+                CalibParams(TrackID,4)*(trialCenters(trialCenters(:,5)==TrackID,2)+CalibParams(TrackID,5));
         end
-        xlabel('calibrated shift measured by 4QM (pixels)')
-        ylabel('reference shift (pixels)')
-        legend('x-axis','y-axis','Location','northwest')
-        legend boxoff
+        whitebg([1,1,1])
+        ax1 = subplot(2,1,1);
+        scatter(calibratedShift(trialCenters(:,6)==0,1), ...
+                trialCenters(trialCenters(:,6)==0,3),[],[0.7,0.7,0.7])
+        hold on
+        scatter(calibratedShift(trialCenters(:,6)==1,1), ...
+                trialCenters(trialCenters(:,6)==1,3),'k')
+        box(ax1,'on')
+        if sum(trialCenters(:,6)) < size(trialCenters,1)
+            legend('rejected','accepted','Location','northwest')
+            legend('boxoff')
+        end
+        ax2 = subplot(2,1,2);
+        scatter(calibratedShift(trialCenters(:,6)==0,2), ...
+                trialCenters(trialCenters(:,6)==0,4),[],[0.7,0.7,0.7])
+        hold on
+        scatter(calibratedShift(trialCenters(:,6)==1,2), ...
+                trialCenters(trialCenters(:,6)==1,4),'k')
+        box(ax2,'on')
+        if sum(trialCenters(:,6)) < size(trialCenters,1)
+            legend('rejected','accepted','Location','northwest')
+            legend('boxoff')
+        end
+        xlabel(ax1,'\Deltax_{4QM} (pixels)')
+        xlabel(ax2,'\Deltay_{4QM} (pixels)')
+        ylabel(ax1,'\Deltax_{ref} (pixels)')
+        ylabel(ax2,'\Deltay_{ref} (pixels)')
         getframe;
 end
-
 end
