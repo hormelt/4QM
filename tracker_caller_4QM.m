@@ -1,4 +1,4 @@
-function [correctedMSDs, MSDs, trialCenters] = tracker_caller_4QM(FileStub,varargin)
+function [correctedMSDs, MSDs, trialCenters, QMTracks] = tracker_caller_4QM(FileStub,varargin)
 
 % Segmentation and Tracking of Particles via the 4QM method in 2D.
 %coorre
@@ -169,6 +169,7 @@ disp([char(9) 'Find single particle calibration parameters.'])
                                                     p.NTests); 
                                         
 rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
+
     
 %% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
@@ -179,14 +180,22 @@ QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 % For now we will just use the good tracks, can thing about if we want to
 % do something different later.
 QMGood = QMTracks(QMTracks(:,5)==1,:);
+if ~isempty(QMGood)
 QMGood = QMGood(:,1:4); %resize for use with calcMSD
+rmsgood = rmserror(unique(QMGood(:,4)));
+
 
                          % Calculate MSDs and errors
 disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMGood,p.NmPerPixel,CollectiveMotionFlag);
 disp([char(10) 'Error correction of MSDs ... '])
 
-correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel^2;
+correctedMSDs = MSDs(:,3:end)-2*repmat(rmsgood',size(MSDs,1),1).^2*p.NmPerPixel^2;
+
+else
+    correctedMSDs = NaN; MSDs = NaN; trialCenters= NaN;
+    
+end
 
 % corrected_AVEmsds = [mean(correctedMSDs(2:end,:),1)' std(correctedMSDs(2:end,:),[],1)']
 % final_AVEmsds = nanmean(corrected_AVEmsds,1);
