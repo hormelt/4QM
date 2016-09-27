@@ -59,7 +59,6 @@ for ParticleID = 1:NParticles
     end
 end
 
-
 CalibParams = zeros(sizeCalibParams,8);
 trialCenters = zeros(NTests*NParticles,6);
 
@@ -89,16 +88,20 @@ for ParticleID = 1:max(Tracks(:,6))
     shiftedData = zeros([size(xGrid),NTests]);
     
     for j = 1:NTests
-        shiftedxGrid = xGrid + dxTrialShift(j);
-        shiftedyGrid = yGrid + dyTrialShift(j);
+        % A minus is needed here, because shifting the particle to the right
+        % with interp2, means that the coordinates should be shifted to the
+        % left. Its like taking a picture. If you want an object to shift
+        % to the right of your picture, you should move your camera to the
+        % left.
+        shiftedxGrid = xGrid - dxTrialShift(j);
+        shiftedyGrid = yGrid - dyTrialShift(j);
         shiftedData(:,:,j) = interp2(xGrid,yGrid,refsubData, ...
                                      shiftedxGrid,shiftedyGrid);
     end
-    
     % Replace NaN resulting from interp2 by data from the subrefFrame
     temp = repmat(refsubData,[1,1,NTests]);
     shiftedData(isnan(shiftedData(:))) = temp(isnan(shiftedData(:)));
-    
+   
     % Start calibration.
     [A,B,C,D] = FQM(shiftedData);
     Centers = [(-A-C+B+D)./(A+B+C+D) (-A-B+C+D)./(A+B+C+D)];
