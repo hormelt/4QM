@@ -8,7 +8,8 @@ function [correctedMSDs, MSDs, trialCenters] = tracker_caller_4QM(FileStub,varar
 %   SecsPerFrame: [optional] Time between frames (sec).
 %   NoiseSz: [optional] (pixels).
 %   FeatSize: [optional] Full optical diameter of particle (pixels).
-%   DeltaFit: [optional] Narrows analysis region around particle (pixels).
+%   DeltaFit: [optional] Widens analysis region around particle (pixels). A
+%   advisable value is FeatSize/2 + 3.
 %   ThreshFact: [optional] maximum intensity devided by the thresfact gives
 %   the threshold value.
 %   TrackMem: [optional] Number of steps disconnected tracks can be
@@ -47,7 +48,7 @@ defNmPerPixel = 16.25; % zyla at 400x
 defSecsPerFrame = 0.011179722;
 defNoiseSz = 1;
 defFeatSize = 15;
-defDeltaFit = 3;
+defDeltaFit = 10;
 defThreshFact = 3.5;
 defTrackMem = 0;
 defDim = 2;
@@ -56,7 +57,7 @@ defPrintTrackProgress = 1;
 defMaxDisp = defFeatSize/2;
 defp.FrameStart = 1;
 defPlotOpt = 'none';
-defErrorThresh = 0.01;
+defErrorThresh = 0.1;
 defNTests = 100;
 defStepAmplitude = 1;
 validPlotOpt = {'bandpass','simple','none'};
@@ -107,19 +108,19 @@ CollectiveMotionFlag = 0; % 1 = subtract collective motion;
 %% Particle Tracking
 
 % Set up arrays
-Data = zeros(FrameHeight,FrameWidth,NFrames-p.FrameStart+1,'int8');
+Data = zeros(FrameHeight,FrameWidth,NFrames-p.FrameStart+1,'uint8');
 bpData = zeros(FrameHeight,FrameWidth,NFrames-p.FrameStart+1,'double');
-
+ 
 % Read in data + bandpasfilter
 disp([char(10) 'Loading and bandpassing frames... '])
 
-for Frame = p.FrameStart:p.NFrames
+for Frame = p.FrameStart:NFrames
     Data(:,:,Frame-p.FrameStart+1) = imread([FileStub '.tif'],Frame);
-    whos imread([FileStub '.tif'],Frame)
     bpData(:,:,Frame-p.FrameStart+1) = bpass2D_TA(double(Data(:,:,Frame-p.FrameStart+1)), ...
                                                   p.NoiseSz,p.FeatSize);
+    %bpData(:,:,Frame-p.FrameStart+1) = double(Data(:,:,Frame-p.FrameStart+1));
 end
-
+   
 % Do traditional tracking to determine averaged particle centers
 disp([char(10) 'Pretracking... '])
 Threshold = max(bpData(:))/p.ThreshFact;
@@ -127,7 +128,7 @@ Centers = zeros(0,5);
 
 for Frame = 1:size(bpData,3)
     Peaks = pkfnd(bpData(:,:,Frame),Threshold,p.FeatSize);
-    temp = cntrd(bpData(:,:,Frame),Peaks,p.FeatSize,0);
+    temp = cntrd(bpData(:,:,Frame),Peaks,p.FeatSize+8,0);
     Centers = [Centers; [temp repmat(Frame,[size(temp,1) 1])]];
 end
 

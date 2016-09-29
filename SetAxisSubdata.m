@@ -11,7 +11,7 @@ function Axis = SetAxisSubdata(CoarseCoord,FeatSize,DeltaFit)
 % OUTPUT:
 %   Axis: The pixel numbers of the pixels around the particle. 
 
-Offset = FeatSize-DeltaFit;       
+Offset = ceil(FeatSize/2)+DeltaFit;      
 if round(CoarseCoord) > CoarseCoord
     Axis = (round(CoarseCoord)-(Offset)): ...
            (round(CoarseCoord)+(Offset))-1;

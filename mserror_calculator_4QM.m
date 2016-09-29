@@ -46,8 +46,8 @@ function [res,trialCenters] = mserror_calculator_4QM(Data,Tracks,FeatSize,DeltaF
 
 
 %% Setup pixel grid for subdata frames.
-xGrid = 1:(2*(FeatSize-DeltaFit));
-yGrid = 1:(2*(FeatSize-DeltaFit));
+xGrid = 1:(2*(ceil(FeatSize/2)+DeltaFit));
+yGrid = 1:(2*(ceil(FeatSize/2)+DeltaFit));
 [xGrid, yGrid] = meshgrid(xGrid,yGrid);
 
 % Allocate space for CalibParams and Centers
@@ -81,7 +81,7 @@ for ParticleID = 1:max(Tracks(:,6))
     refsubData = subData(:,:,refStep);
     
     % Determine the trial shifts of the refFrame for 4QM calibration.
-    dxTrialShift = StepAmplitude*(randn(NTests,1));
+    dxTrialShift = StepAmplitude*(randn(NTests,1)); 
     dyTrialShift = StepAmplitude*(randn(NTests,1));
     
     % Create the trial data by shifting refsubData by TrialShift.
@@ -108,16 +108,17 @@ for ParticleID = 1:max(Tracks(:,6))
     refShift = [dxTrialShift dyTrialShift];
     
     % Find the p coefficients to calibrate shift detection by 4QM.
-    options = optimoptions(@lsqcurvefit, 'Display','none');
+    options = optimoptions(@lsqcurvefit,'Display','none');
     [p1,fvalx] = lsqcurvefit(@(p1,xdata) (p1(1)*xdata+p1(2)), ...
                  [range(refShift(:,1))/range(Centers(:,1)),mean(refShift(:,1))] ...
                  ,Centers(:,1),refShift(:,1),[],[],options);  
     [p2,fvaly] = lsqcurvefit(@(p2,xdata) (p2(1)*xdata+p2(2)), ...
                  [range(refShift(:,2))/range(Centers(:,2)),mean(refShift(:,2))] ...
                  ,Centers(:,2),refShift(:,2),[],[],options);
-    errx = sqrt(fvalx);
-    erry = sqrt(fvaly);
-    res1 = [p1 errx p2 erry];
+
+    errx = sqrt(fvalx/size(Centers,1));
+    erry = sqrt(fvaly/size(Centers,1));
+    res1 = [p1 errx p2 erry]; 
  
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,1:2) = Centers;
     trialCenters((ParticleID-1)*NTests+1:(ParticleID)*NTests,3:4) = refShift;
