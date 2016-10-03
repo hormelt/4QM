@@ -13,7 +13,7 @@ function [] = fake_data_maker(NFrames,SigPtcle,stdStep,RelativeNoiseAmplitude,Ve
 %   Version: A version number to avoid conflicts.
 
 % VARIABLES
-maxInt = 255;
+maxInt = 225;
 dt = 1;
 xbound = 512;
 ybound = 512;
@@ -40,7 +40,7 @@ y0 = 51:47:ybound;
 [x0, y0] = meshgrid(x0,y0);
 
 x0 = x0 + 15*(rand(size(x0))-0.5);
-y0 = y0 + 15*(rand(size(y0))-0.5);
+y0 = y0 + 15*(rand(size(y0))-0.5); 
 nptcles = length(x0(:));
 Tracks = zeros(nptcles*NFrames,4);
 
@@ -57,6 +57,7 @@ for frame = 1:NFrames
     for ptcle = 1:nptcles      
         data = data + exp(-((x-x1(ptcle)).^2 + (y-y1(ptcle)).^2)/(2*SigPtcle^2))*maxInt;       
     end
+     
     
     data = data + noise_amplitude*rand(size(data,1),size(data,2));
     data = data/(maxInt+noise_amplitude)*maxInt;
