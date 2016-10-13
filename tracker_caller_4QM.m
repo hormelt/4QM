@@ -171,14 +171,10 @@ disp([char(9) 'Find single particle calibration parameters.'])
                                                     p.ErrorThresh, NParticles, ...
                                                     p.NTests); 
                                         
-<<<<<<< HEAD
-rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
+% rmserror = sqrt((CalibParams(:,3) + CalibParams(:,6)));
 
-    
-=======
 rmserror = sqrt((CalibParams(CalibParams(:,8)==1,3) + CalibParams(CalibParams(:,8)==1,6)));
 
->>>>>>> 7f7cf73c96722f32a9da30ad4b8d9b53601baffa
 %% Use single particle calibrations with 4QM to process real data
 disp([char(10) '4QM ... '])
 disp([char(9) 'Processing real data.'])
@@ -190,8 +186,8 @@ QMTracks = QMtrackcorrection(Tracks,bpData,refCenters,CalibParams, ...
 QMGood = QMTracks(QMTracks(:,5)==1,:);
 if ~isempty(QMGood)
 QMGood = QMGood(:,1:4); %resize for use with calcMSD
-rmsgood = rmserror(unique(QMGood(:,4)));
-
+% rmsgood = rmserror(unique(QMGood(:,4)));
+rmsgood = rmserror;
 
 % Calculate MSDs and errors
 
@@ -199,7 +195,6 @@ disp([char(9) 'Calculating MSDs.'])
 MSDs = calcMSD(QMGood,p.NmPerPixel,CollectiveMotionFlag);
 disp([char(10) 'Error correction of MSDs ... '])
 
-<<<<<<< HEAD
 correctedMSDs = MSDs(:,3:end)-2*repmat(rmsgood',size(MSDs,1),1).^2*p.NmPerPixel^2;
 
 else
@@ -211,13 +206,11 @@ end
 % final_AVEmsds = nanmean(corrected_AVEmsds,1);
 % final_AVEmsds(:,2) = final_AVEmsds(:,2)/sqrt(size(corrected_AVEmsds,1));
 
-=======
 correctedMSDs = MSDs(:,3:end)-2*repmat(rmserror',size(MSDs,1),1).^2*p.NmPerPixel^2;
 averagecorrectedMSDs = nansum(correctedMSDs,2)./size(correctedMSDs,2);
 stdcorrectedMSDs = std(correctedMSDs,[],2);
 correctedMSDs = [averagecorrectedMSDs stdcorrectedMSDs correctedMSDs];
 correctedMSDs(1,:) = zeros(1,size(correctedMSDs,2));
->>>>>>> 7f7cf73c96722f32a9da30ad4b8d9b53601baffa
 %% output
 
 % Showing MSD graph

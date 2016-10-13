@@ -10,9 +10,10 @@ particle_tracks2(:,1:4)=particle_tracks;
 % accumulate instantaneous displacements; store in columnes 5&6 of
 % particle_tracks2.
 %
-
-for ptcleid = min(particle_tracks(:,4)):max(particle_tracks(:,4))
+trackids = unique(particle_tracks(:,4));
+for j = 1:numel(trackids) % can't just count from min to max in case of missed tracks. I've corrected this error at least 5 times. --Grouchy TH
     
+    ptcleid = trackids(j);
     ptcle_logic = particle_tracks(:,4)==ptcleid;
     
     if sum(ptcle_logic)~=0
@@ -48,9 +49,12 @@ end
 % compute MSD
 %
 ptcle_index = 0;
-for ptcleid = min(particle_tracks3(:,4)):max(particle_tracks3(:,4))
+newtracks = unique(particle_tracks3(:,4));
+for j = 1:numel(newtracks) % ... --TH
     
-    spt = particle_tracks3(find(particle_tracks3(:,4)==ptcleid),:);
+    ptcleid = newtracks(j);
+    
+    spt = particle_tracks3(particle_tracks3(:,4)==ptcleid,:);
     %     flucts(ptcleid) = sqrt(mean((spt(:,1)-mean(spt(:,1))).^2 + (spt(:,2)-mean(spt(:,2))).^2))*(nm_per_pixel);
     if ~isempty(spt)
         ptcle_index = ptcle_index + 1;
